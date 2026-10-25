@@ -1,15 +1,12 @@
 {
-  "versionName": "1.0.15",
-  "versionCode": 16,
-  "publishedAt": "2026-10-25T16:45:00Z",
+  "versionName": "1.0.16",
+  "versionCode": 17,
+  "publishedAt": "2026-10-25T17:30:00Z",
   "changelog": [
-    "Pengatur Waktu Tidur (Sleep Timer): Setel musik otomatis mati (5m, 15m, 30m, 45m, 1 jam, atau akhir lagu)",
-    "Equalizer & Bass Boost Bawaan: Pilihan preset musik (Rock, Pop, Metal, Jazz, dll), penguat bass, dan custom 5-band slider",
-    "Lirik Karaoke Berjalan (Synced Auto-Scroll): Baris lirik aktif menyala hijau tebal dan bergulir otomatis mengikuti alur lagu (tap-to-seek)",
-    "Mode Slowed & Nightcore: Pengatur kecepatan pemutaran lagu (0.8x Slowed Chill, 1.0x Normal, 1.25x Speed Up, 1.5x Nightcore)",
-    "Download Lagu Offline Nyata: Simpan lagu langsung ke penyimpanan lokal HP dan putar 100% tanpa internet di Library",
-    "Crossfade Otomatis: Transisi volume fade-in dan fade-out antar lagu yang lembut dan mulus tanpa jeda hening",
+    "Full Reactive Multi-Language Engine: Bahasa Mandarin (中文), Jepang (日本語), Inggris (English), Spanyol (Español), dan lainnya kini 100% berfungsi aktif di seluruh layar Beranda, Pencarian, Library, Pengaturan, dan Pemutar Musik",
+    "Sapaan Waktu Multibahasa Dinamis: Sapaan waktu menyesuaikan bahasa (misal: 早上好, Good morning, Buenos días)",
+    "Tab Navigasi & Chip Genre Terjemahan Real-Time: Seluruh label genre dan tab berubah instan dalam 0 ms saat bahasa dipilih",
     "Single Dex & Keystore Pinned: Tetap tepat 1 file classes.dex dan ukuran ramping ~4.4 MB"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.15/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.16/app-release.apk"
 }

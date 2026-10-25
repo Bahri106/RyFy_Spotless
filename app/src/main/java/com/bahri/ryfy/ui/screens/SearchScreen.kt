@@ -1,5 +1,7 @@
 package com.bahri.ryfy.ui.screens
 
+import com.bahri.ryfy.core.RyFyStrings
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -113,7 +115,7 @@ fun SearchScreen() {
             .padding(top = 16.dp)
     ) {
         Text(
-            text = "Cari",
+            text = RyFyStrings.get(RyFyStrings.Key.SEARCH_TITLE),
             style = MaterialTheme.typography.headlineLarge,
             color = SpotifyText
         )
@@ -135,7 +137,7 @@ fun SearchScreen() {
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = null,
+                    contentDescription = "Search",
                     tint = Color(0xFF121212),
                     modifier = Modifier.size(24.dp)
                 )
@@ -143,7 +145,7 @@ fun SearchScreen() {
                 Box(modifier = Modifier.weight(1f)) {
                     if (searchQuery.isEmpty()) {
                         Text(
-                            text = "Apa yang ingin kamu dengarkan?",
+                            text = RyFyStrings.get(RyFyStrings.Key.SEARCH_PLACEHOLDER),
                             color = Color(0xFF747474),
                             fontSize = 14.sp
                         )
@@ -229,13 +231,13 @@ fun SearchScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Pencarian Terbaru",
+                                text = RyFyStrings.get(RyFyStrings.Key.RECENT_SEARCHES),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = SpotifyText
                             )
                             Text(
-                                text = "Hapus semua",
+                                text = RyFyStrings.get(RyFyStrings.Key.CLEAR_ALL),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = SpotifyTextSecondary,
                                 fontWeight = FontWeight.SemiBold,

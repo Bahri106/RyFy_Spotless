@@ -1,5 +1,7 @@
 package com.bahri.ryfy.ui.screens
 
+import com.bahri.ryfy.core.RyFyStrings
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -109,7 +111,7 @@ fun LibraryScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Koleksi Kamu",
+                        text = RyFyStrings.get(RyFyStrings.Key.LIBRARY_TITLE),
                         style = MaterialTheme.typography.headlineLarge,
                         color = SpotifyText
                     )
@@ -158,8 +160,8 @@ fun LibraryScreen() {
         // Liked Songs row (Actual Reactive Count)
         item {
             LibraryRow(
-                title = "Lagu yang Disukai",
-                subtitle = "Sematkan · ${favorites.size} lagu",
+                title = RyFyStrings.get(RyFyStrings.Key.LIKED_SONGS),
+                subtitle = "${favorites.size} ${RyFyStrings.get(RyFyStrings.Key.OFFLINE_SONGS_SUB)}",
                 brush = Brush.linearGradient(listOf(Color(0xFF450AF5), Color(0xFFC4EFD9))),
                 icon = Icons.Default.Favorite,
                 onClick = {
@@ -175,8 +177,8 @@ fun LibraryScreen() {
         // Offline Downloaded Tracks row
         item {
             LibraryRow(
-                title = "Musik Tersimpan Offline",
-                subtitle = "${offlineTracks.size} lagu · Tersedia tanpa internet",
+                title = RyFyStrings.get(RyFyStrings.Key.OFFLINE_SONGS),
+                subtitle = "${offlineTracks.size} ${RyFyStrings.get(RyFyStrings.Key.OFFLINE_SONGS_SUB)}",
                 brush = Brush.linearGradient(listOf(Color(0xFF006450), Color(0xFF1DB954))),
                 icon = Icons.Default.DownloadDone,
                 onClick = {
@@ -192,7 +194,7 @@ fun LibraryScreen() {
         // Section: Custom User Playlists
         item {
             Text(
-                text = "Playlist Kamu",
+                text = RyFyStrings.get(RyFyStrings.Key.YOUR_PLAYLISTS),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SpotifyText,

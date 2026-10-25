@@ -1,5 +1,8 @@
 package com.bahri.ryfy.ui.screens
 
+import com.bahri.ryfy.core.AppLanguageManager
+import com.bahri.ryfy.core.RyFyStrings
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -155,18 +158,21 @@ val SAMPLE_TRACKS = INITIAL_RECOMMENDED_TRACKS
 @Composable
 fun HomeScreen() {
     val recentTracks by com.bahri.ryfy.data.RecentlyPlayedManager.recentTracks.collectAsState()
-    val greeting = remember {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        when (hour) {
-            in 4..11 -> "Selamat pagi"
-            in 12..15 -> "Selamat siang"
-            in 16..18 -> "Selamat sore"
-            else -> "Selamat malam"
-        }
-    }
+    val currentLangCode by AppLanguageManager.currentLanguage.collectAsState()
+    val greeting = remember(currentLangCode) { RyFyStrings.getGreeting(currentLangCode) }
 
     var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filters = listOf("Semua", "Pop", "Indie", "Rock", "Akustik", "K-Pop", "Chill")
+    val filters = listOf(
+        RyFyStrings.get(RyFyStrings.Key.GENRE_ALL),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_POP),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_INDIE),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_ROCK),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_ACOUSTIC),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_KPOP),
+        RyFyStrings.get(RyFyStrings.Key.GENRE_CHILL)
+    )
+
+    val rawGenres = listOf("Semua", "Pop", "Indie", "Rock", "Akustik", "K-Pop", "Chill")
 
     var artistMixTracks by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
     var topCharts by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
@@ -174,7 +180,7 @@ fun HomeScreen() {
     var isAutofetching by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedFilterIndex) {
-        val genre = filters[selectedFilterIndex]
+        val genre = rawGenres.getOrElse(selectedFilterIndex) { "Semua" }
         if (genre == "Semua") {
             try {
                 val hits = MusicApiService.searchSongs("Raim Laode Nadin Amizah Bernadya")
@@ -188,11 +194,11 @@ fun HomeScreen() {
             isAutofetching = true
             try {
                 val query = when (genre) {
-                    "Pop" -> "Lagu Pop Indonesia Terpopuler 2026"
-                    "Indie" -> "Lagu Indie Indonesia Paling Populer"
-                    "Rock" -> "Lagu Rock Indonesia Terbaik"
-                    "Akustik" -> "Lagu Akustik Santai Indonesia"
-                    "K-Pop" -> "K-Pop Top Hits 2026"
+                    "Pop" -> "Lagu Pop Terpopuler"
+                    "Indie" -> "Lagu Indie Paling Populer"
+                    "Rock" -> "Lagu Rock Terbaik"
+                    "Akustik" -> "Lagu Akustik Santai"
+                    "K-Pop" -> "K-Pop Top Hits"
                     "Chill" -> "Chill Relaxing Lo-Fi Music"
                     else -> "$genre Hits"
                 }
@@ -284,7 +290,7 @@ fun HomeScreen() {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Baru saja diputar",
+                        text = RyFyStrings.get(RyFyStrings.Key.RECENTLY_PLAYED),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = SpotifyText,
@@ -446,7 +452,7 @@ fun HomeScreen() {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Stasiun rekomendasi",
+                    text = RyFyStrings.get(RyFyStrings.Key.RECOMMENDED_STATIONS),
                     style = MaterialTheme.typography.headlineMedium,
                     color = SpotifyText,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -466,11 +472,11 @@ fun HomeScreen() {
             }
         }
 
-        // Section 4: Tangga Lagu Teratas (Indonesia Top 50)
+        // Section 4: Tangga Lagu Teratas (Top 50)
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Tangga Lagu Teratas",
+                    text = RyFyStrings.get(RyFyStrings.Key.TOP_CHARTS),
                     style = MaterialTheme.typography.headlineMedium,
                     color = SpotifyText,
                     modifier = Modifier.padding(horizontal = 16.dp)

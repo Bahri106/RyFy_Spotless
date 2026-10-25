@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.bahri.ryfy.core.AppLanguageManager
+import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.data.FavoritesManager
 import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.playback.RyFyNotificationManager
@@ -173,18 +175,24 @@ fun MainApp(updateManager: UpdateManager) {
             ) {
                 RyFyTab.entries.forEach { tab ->
                     val isSelected = selectedTab == tab
+                    val tabLabel = when (tab) {
+                        RyFyTab.HOME -> RyFyStrings.get(RyFyStrings.Key.NAV_HOME)
+                        RyFyTab.SEARCH -> RyFyStrings.get(RyFyStrings.Key.NAV_SEARCH)
+                        RyFyTab.LIBRARY -> RyFyStrings.get(RyFyStrings.Key.NAV_LIBRARY)
+                        RyFyTab.SETTINGS -> RyFyStrings.get(RyFyStrings.Key.NAV_SETTINGS)
+                    }
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = { selectedTab = tab },
                         icon = {
                             Icon(
                                 imageVector = tab.icon,
-                                contentDescription = tab.label
+                                contentDescription = tabLabel
                             )
                         },
                         label = {
                             Text(
-                                text = tab.label,
+                                text = tabLabel,
                                 style = androidx.compose.material3.MaterialTheme.typography.labelSmall
                             )
                         },

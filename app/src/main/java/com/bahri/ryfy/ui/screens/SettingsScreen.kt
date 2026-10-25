@@ -56,6 +56,7 @@ import com.bahri.ryfy.BuildConfig
 import com.bahri.ryfy.R
 import com.bahri.ryfy.core.AppIconManager
 import com.bahri.ryfy.core.AppLanguageManager
+import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.ui.dialogs.AboutRyFyDialog
 import com.bahri.ryfy.ui.dialogs.AppIconDialog
 import com.bahri.ryfy.ui.dialogs.DeveloperBottomSheet
@@ -93,7 +94,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
             // Header Title
             item {
                 Text(
-                    text = "Pengaturan",
+                    text = RyFyStrings.get(RyFyStrings.Key.SETTINGS_TITLE),
                     style = MaterialTheme.typography.headlineLarge,
                     color = SpotifyText,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -112,8 +113,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
                     Column {
                         SettingsItemRow(
                             icon = Icons.Default.People,
-                            title = "Tim Pengembang & Komunitas",
-                            subtitle = "Saiful Bahri (Founder) · Diki Dev (Co-Founder)",
+                            title = RyFyStrings.get(RyFyStrings.Key.DEV_TEAM),
+                            subtitle = RyFyStrings.get(RyFyStrings.Key.DEV_TEAM_SUB),
                             highlight = true,
                             onClick = { showDeveloperSheet = true }
                         )
@@ -126,8 +127,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         SettingsItemRow(
                             icon = Icons.Default.Info,
-                            title = "Tentang RyFy Spotless",
-                            subtitle = "Informasi aplikasi, fitur bebas iklan & privasi",
+                            title = RyFyStrings.get(RyFyStrings.Key.ABOUT_APP),
+                            subtitle = RyFyStrings.get(RyFyStrings.Key.ABOUT_APP_SUB),
                             onClick = { showAboutDialog = true }
                         )
                     }
@@ -146,8 +147,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
                     Column {
                         SettingsItemRow(
                             icon = Icons.Default.GraphicEq,
-                            title = "Equalizer & Efek Suara",
-                            subtitle = "Penguat Bass (Bass Boost), Preset Musik, & 5-Band Slider",
+                            title = RyFyStrings.get(RyFyStrings.Key.EQUALIZER_TITLE),
+                            subtitle = RyFyStrings.get(RyFyStrings.Key.EQUALIZER_SUB),
                             onClick = { showEqualizerDialog = true }
                         )
 
@@ -155,8 +156,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         SettingsItemRow(
                             icon = Icons.Default.Security,
-                            title = "Proteksi & Privasi",
-                            subtitle = "Tanpa pelacak, mode tamu zero-login aman",
+                            title = RyFyStrings.get(RyFyStrings.Key.PRIVACY_TITLE),
+                            subtitle = RyFyStrings.get(RyFyStrings.Key.PRIVACY_SUB),
                             onClick = {
                                 Toast.makeText(context, "Proteksi privasi offline aktif", Toast.LENGTH_SHORT).show()
                             }
@@ -166,8 +167,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         SettingsItemRow(
                             icon = Icons.Default.CleaningServices,
-                            title = "Bersihkan Cache Audio",
-                            subtitle = "Kosongkan ruang penyimpanan sementara",
+                            title = RyFyStrings.get(RyFyStrings.Key.CLEAR_CACHE),
+                            subtitle = RyFyStrings.get(RyFyStrings.Key.CLEAR_CACHE_SUB),
                             onClick = {
                                 context.cacheDir.deleteRecursively()
                                 Toast.makeText(context, "Cache aplikasi berhasil dibersihkan", Toast.LENGTH_SHORT).show()
@@ -178,7 +179,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         SettingsItemRow(
                             icon = Icons.Default.Language,
-                            title = "Bahasa Aplikasi / App Language",
+                            title = RyFyStrings.get(RyFyStrings.Key.APP_LANGUAGE),
                             subtitle = currentLangLabel,
                             onClick = { showLanguageDialog = true }
                         )
@@ -198,7 +199,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         SettingsItemRow(
                             icon = Icons.Default.SystemUpdate,
-                            title = "Pembaruan Aplikasi",
+                            title = RyFyStrings.get(RyFyStrings.Key.APP_UPDATE),
                             subtitle = updateSubtitle,
                             isBusy = updateState is UpdateState.Checking,
                             highlight = updateState is UpdateState.Available || updateState is UpdateState.ReadyToInstall,

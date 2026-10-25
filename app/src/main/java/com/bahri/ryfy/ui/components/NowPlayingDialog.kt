@@ -84,6 +84,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import com.bahri.ryfy.R
+import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.data.OfflineTrackManager
 import com.bahri.ryfy.data.PlaylistManager
 import com.bahri.ryfy.data.api.MusicApiService
@@ -425,7 +426,7 @@ fun NowPlayingDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "LIRIK",
+                                text = RyFyStrings.get(RyFyStrings.Key.LYRICS_HEADER),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = SpotifyGreen
@@ -438,7 +439,7 @@ fun NowPlayingDialog(
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "BUKA PENUH",
+                                    text = RyFyStrings.get(RyFyStrings.Key.LYRICS_OPEN_FULL),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = SpotifyText
@@ -515,7 +516,7 @@ fun NowPlayingDialog(
                         // Option 1: Suka / Tidak Suka
                         MoreOptionItem(
                             iconPainter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
-                            title = if (track.isLiked) "Hapus dari Lagu yang Disukai" else "Sukai Lagu Ini",
+                            title = if (track.isLiked) RyFyStrings.get(RyFyStrings.Key.UNLIKE_SONG) else RyFyStrings.get(RyFyStrings.Key.LIKE_SONG),
                             iconTint = if (track.isLiked) SpotifyGreen else SpotifyText,
                             onClick = {
                                 onToggleLike(track)
@@ -526,7 +527,7 @@ fun NowPlayingDialog(
                         // Option 2: Tambahkan ke Playlist
                         MoreOptionItem(
                             iconVector = Icons.Default.PlaylistAdd,
-                            title = "Tambahkan ke Playlist",
+                            title = RyFyStrings.get(RyFyStrings.Key.ADD_TO_PLAYLIST),
                             onClick = {
                                 showMoreOptions = false
                                 showAddToPlaylistDialog = true
@@ -536,7 +537,7 @@ fun NowPlayingDialog(
                         // Option 3: Antrean Pemutaran
                         MoreOptionItem(
                             iconVector = Icons.Default.QueueMusic,
-                            title = "Buka Antrean Pemutaran",
+                            title = RyFyStrings.get(RyFyStrings.Key.OPEN_QUEUE),
                             onClick = {
                                 showMoreOptions = false
                                 showQueueSheet = true
@@ -546,7 +547,7 @@ fun NowPlayingDialog(
                         // Option 4: Karya Artis
                         MoreOptionItem(
                             iconVector = Icons.Default.Person,
-                            title = "Karya Lain dari ${track.artist}",
+                            title = RyFyStrings.get(RyFyStrings.Key.ARTIST_WORKS),
                             onClick = {
                                 showMoreOptions = false
                                 showArtistSheet = true
@@ -554,9 +555,12 @@ fun NowPlayingDialog(
                         )
 
                         // Option 5: Unduh Lagu Offline
+                        val dlTitle = if (isDownloading) RyFyStrings.get(RyFyStrings.Key.DOWNLOADING)
+                            else if (isDownloaded) RyFyStrings.get(RyFyStrings.Key.DELETE_OFFLINE)
+                            else RyFyStrings.get(RyFyStrings.Key.DOWNLOAD_OFFLINE)
                         MoreOptionItem(
                             iconVector = if (isDownloaded) Icons.Default.DownloadDone else Icons.Default.Download,
-                            title = if (isDownloading) "Sedang Mengunduh..." else if (isDownloaded) "Hapus Lagu Offline" else "Unduh Lagu Offline",
+                            title = dlTitle,
                             iconTint = if (isDownloaded) SpotifyGreen else SpotifyText,
                             onClick = {
                                 showMoreOptions = false
@@ -576,7 +580,7 @@ fun NowPlayingDialog(
                         // Option 6: Pengatur Waktu Tidur
                         MoreOptionItem(
                             iconVector = Icons.Default.Timer,
-                            title = "Pengatur Waktu Tidur",
+                            title = RyFyStrings.get(RyFyStrings.Key.SLEEP_TIMER),
                             onClick = {
                                 showMoreOptions = false
                                 showSleepTimerDialog = true
@@ -586,7 +590,7 @@ fun NowPlayingDialog(
                         // Option 7: Equalizer & Efek Suara
                         MoreOptionItem(
                             iconVector = Icons.Default.GraphicEq,
-                            title = "Equalizer & Efek Suara",
+                            title = RyFyStrings.get(RyFyStrings.Key.EQUALIZER_TITLE),
                             onClick = {
                                 showMoreOptions = false
                                 showEqualizerDialog = true
@@ -596,7 +600,7 @@ fun NowPlayingDialog(
                         // Option 8: Kecepatan Pemutaran
                         MoreOptionItem(
                             iconVector = Icons.Default.Speed,
-                            title = "Kecepatan Pemutaran (Slowed / Speed)",
+                            title = RyFyStrings.get(RyFyStrings.Key.PLAYBACK_SPEED),
                             onClick = {
                                 showMoreOptions = false
                                 showPlaybackSpeedDialog = true
@@ -606,7 +610,7 @@ fun NowPlayingDialog(
                         // Option 9: Bagikan
                         MoreOptionItem(
                             iconVector = Icons.Default.Share,
-                            title = "Bagikan Lagu",
+                            title = RyFyStrings.get(RyFyStrings.Key.SHARE_SONG),
                             onClick = {
                                 showMoreOptions = false
                                 val shareText = "Mendengarkan '${track.title}' oleh ${track.artist} di RyFy Spotless (Bebas Iklan): https://t.me/ryfyProject"
