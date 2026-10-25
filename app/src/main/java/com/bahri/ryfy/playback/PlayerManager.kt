@@ -37,6 +37,7 @@ object PlayerManager {
     private var exoPlayer: ExoPlayer? = null
     private val scope = CoroutineScope(Dispatchers.Main)
     private var progressJob: Job? = null
+    private var playbackJob: Job? = null
     private var simpleCache: SimpleCache? = null
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
@@ -74,7 +75,7 @@ object PlayerManager {
 
         // High reliability HTTP Data Source with long timeout & auto-redirects
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.4")
+            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.6")
             .setConnectTimeoutMs(20000)
             .setReadTimeoutMs(35000)
             .setAllowCrossProtocolRedirects(true)
@@ -128,6 +129,8 @@ object PlayerManager {
                             exoPlayer?.setMediaItem(MediaItem.fromUri(retryUrl), lastPos)
                             exoPlayer?.prepare()
                             exoPlayer?.play()
+                        } else {
+                            playNext()
                         }
                     }
                 }
@@ -138,34 +141,51 @@ object PlayerManager {
 
     fun playTrack(track: Track, newQueue: List<Track>? = null) {
         val player = exoPlayer ?: return
+
+        // 1. Cancel previous pending stream resolution immediately
+        playbackJob?.cancel()
+
+        // 2. Immediately stop previous audio & reset position
+        player.stop()
+        player.clearMediaItems()
+        _currentPositionMs.value = 0L
+        _isPlaying.value = false
+        _currentTrack.value = track
+
+        // 3. Manage Queue
         if (newQueue != null && newQueue.isNotEmpty()) {
             _queue.value = newQueue
         } else {
-            _queue.value = listOf(track)
-            // Auto artist radio: fetch more works from the same artist so next tracks are relevant
-            scope.launch(Dispatchers.IO) {
-                try {
-                    val artistTracks = MusicApiService.searchSongs(track.artist)
-                        .filter { it.title.trim().lowercase() != track.title.trim().lowercase() }
-                    if (artistTracks.isNotEmpty()) {
-                        _queue.value = listOf(track) + artistTracks
+            val existsInQueue = _queue.value.any {
+                it.id == track.id || (it.title.equals(track.title, true) && it.artist.equals(track.artist, true))
+            }
+            if (!existsInQueue) {
+                _queue.value = listOf(track)
+                // Auto artist radio: fetch more works from the same artist so next tracks are always available
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val artistTracks = MusicApiService.searchSongs(track.artist)
+                            .filter { !it.title.equals(track.title, true) }
+                        if (artistTracks.isNotEmpty()) {
+                            _queue.value = listOf(track) + artistTracks
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Artist radio queue error: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Artist radio queue error: ${e.message}")
                 }
             }
         }
-        _currentTrack.value = track
 
+        // 4. Start playback
         val streamUrl = track.streamUrl
         if (!streamUrl.isNullOrBlank()) {
             val mediaItem = MediaItem.fromUri(streamUrl)
             player.setMediaItem(mediaItem)
             player.prepare()
             player.play()
+            _isPlaying.value = true
         } else {
-            // Asynchronously resolve stream & lyrics
-            scope.launch {
+            playbackJob = scope.launch {
                 var targetVideoId = track.videoId
                 var currentTrackInfo = track
 
@@ -175,6 +195,7 @@ object PlayerManager {
                     if (match != null && !match.videoId.isNullOrBlank()) {
                         targetVideoId = match.videoId
                         currentTrackInfo = track.copy(
+                            id = match.videoId,
                             videoId = match.videoId,
                             coverUrl = if (track.coverUrl.isBlank()) match.coverUrl else track.coverUrl,
                             durationMs = if (track.durationMs == 0L) match.durationMs else track.durationMs
@@ -193,7 +214,14 @@ object PlayerManager {
                         player.setMediaItem(mediaItem)
                         player.prepare()
                         player.play()
+                        _isPlaying.value = true
+                    } else {
+                        Log.w(TAG, "Failed to resolve stream for videoId $targetVideoId, auto-skipping to next")
+                        playNext()
                     }
+                } else {
+                    Log.w(TAG, "No videoId found for track ${track.title}, auto-skipping to next")
+                    playNext()
                 }
             }
         }
@@ -222,13 +250,20 @@ object PlayerManager {
         if (currentList.isEmpty()) return
 
         if (_shuffleMode.value != ShuffleMode.OFF && currentList.size > 1) {
-            val remaining = currentList.filter { it.id != current.id }
+            val remaining = currentList.filter {
+                it.id != current.id && !(it.title.equals(current.title, true) && it.artist.equals(current.artist, true))
+            }
             val nextTrack = remaining.randomOrNull() ?: currentList.first()
             playTrack(nextTrack, currentList)
         } else {
-            val currentIndex = currentList.indexOfFirst { it.id == current.id }
+            val currentIndex = currentList.indexOfFirst {
+                it.id == current.id || (it.title.equals(current.title, true) && it.artist.equals(current.artist, true))
+            }
             if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
                 playTrack(currentList[currentIndex + 1], currentList)
+            } else if (currentList.isNotEmpty()) {
+                // Loop back to start or fetch fresh recommendations
+                playTrack(currentList.first(), currentList)
             }
         }
     }
@@ -236,7 +271,14 @@ object PlayerManager {
     fun playPrevious() {
         val currentList = _queue.value
         val current = _currentTrack.value ?: return
-        val currentIndex = currentList.indexOfFirst { it.id == current.id }
+        if (currentList.isEmpty()) {
+            seekTo(0)
+            return
+        }
+
+        val currentIndex = currentList.indexOfFirst {
+            it.id == current.id || (it.title.equals(current.title, true) && it.artist.equals(current.artist, true))
+        }
         if (currentIndex > 0) {
             playTrack(currentList[currentIndex - 1], currentList)
         } else {
@@ -260,7 +302,7 @@ object PlayerManager {
                     if (smartTracks.isNotEmpty()) {
                         val currentList = _queue.value.toMutableList()
                         smartTracks.forEach { t ->
-                            if (currentList.none { it.id == t.id }) {
+                            if (currentList.none { it.id == t.id || (it.title == t.title && it.artist == t.artist) }) {
                                 currentList.add(t)
                             }
                         }

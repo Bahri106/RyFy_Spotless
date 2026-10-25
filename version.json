@@ -1,14 +1,12 @@
 {
-  "versionName": "1.0.5",
-  "versionCode": 6,
-  "publishedAt": "2026-10-25T09:35:00Z",
+  "versionName": "1.0.6",
+  "versionCode": 7,
+  "publishedAt": "2026-10-25T09:55:00Z",
   "changelog": [
-    "Fix Audio Stop Midway: Agresif ExoPlayer LoadControl (60s min, 300s max) buffer seluruh file audio di awal pemutaran",
-    "Thumbnail HD 1080p: Auto-upgrade regex URL thumbnail YouTube ke =w1080-h1080 & maxresdefault (bebas buriq)",
-    "3-State Shuffle Spotify: Normal Shuffle & Smart Shuffle ✨ (dengan auto-inject rekomendasi lagu artis)",
-    "Tampilan Beranda 1:1 Spotify: Section Mix Artis (Mix Raim Laode, Mix Hindia), Stasiun Rekomendasi Radio Artis, dan lagu pilihan",
-    "Navigasi Tembus Pandang: Bottom Navigation & Mini Player berlatar belakang gradien transparan frosted glass",
-    "Aset Asli Spotify: Menggunakan vector icon resmi Spotify (Smart Shuffle, Devices MD, Repeat, Skip, Play, Heart)"
+    "Fix Next Song Transition: Otomatis stop lagu lama, reset posisi, dan langsung play lagu berikutnya tanpa stuck di 00:00",
+    "Universal Innertube Parser: Deteksi musicCardShelfRenderer & itemSectionRenderer (lagu game/anime/OST seperti Monster Siren 100% playable)",
+    "Auto-Skip on Fail: Jika resolusi stream gagal, pemutar otomatis lompat ke lagu berikutnya tanpa macet di antrean",
+    "Pencegahan Race Condition: Cancel pending coroutine resolusi lagu lama saat tombol Next ditekan berulang"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.5/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.6/app-release.apk"
 }

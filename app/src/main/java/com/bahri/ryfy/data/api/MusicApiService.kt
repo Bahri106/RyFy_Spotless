@@ -39,7 +39,8 @@ object MusicApiService {
     }
 
     /**
-     * Search songs via YouTube Music Innertube API (Real music database, no API key needed).
+     * Search songs via YouTube Music Innertube API.
+     * Universal parser supporting musicCardShelfRenderer, musicShelfRenderer, and itemSectionRenderer.
      */
     suspend fun searchSongs(query: String): List<Track> = withContext(Dispatchers.IO) {
         if (query.isBlank()) return@withContext emptyList()
@@ -54,7 +55,6 @@ object MusicApiService {
                     })
                 })
                 put("query", query)
-                put("params", "EgWKAQIIAWoKEAkQBRAKEAMQBA%3D%3D") // Music Songs Filter
             }
 
             val request = Request.Builder()
@@ -80,72 +80,161 @@ object MusicApiService {
                     ?.optJSONObject("sectionListRenderer")
                     ?.optJSONArray("contents") ?: return@withContext emptyList()
 
-                val shelf = sections.optJSONObject(0)?.optJSONObject("musicShelfRenderer")
-                val contents = shelf?.optJSONArray("contents") ?: return@withContext emptyList()
-
                 val list = mutableListOf<Track>()
-                for (i in 0 until contents.length()) {
-                    val item = contents.optJSONObject(i)?.optJSONObject("musicResponsiveListItemRenderer") ?: continue
-                    val flex = item.optJSONArray("flexColumns") ?: continue
 
-                    val title = flex.optJSONObject(0)
-                        ?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")
-                        ?.optJSONObject("text")
-                        ?.optJSONArray("runs")
-                        ?.optJSONObject(0)
-                        ?.optString("text", "Unknown Title") ?: "Unknown Title"
+                for (sIdx in 0 until sections.length()) {
+                    val section = sections.optJSONObject(sIdx) ?: continue
 
-                    val artistRuns = flex.optJSONObject(1)
-                        ?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")
-                        ?.optJSONObject("text")
-                        ?.optJSONArray("runs")
+                    // 1. Check musicCardShelfRenderer (Top Result / Exact artist & track card)
+                    val card = section.optJSONObject("musicCardShelfRenderer")
+                    if (card != null) {
+                        val title = card.optJSONObject("title")
+                            ?.optJSONArray("runs")
+                            ?.optJSONObject(0)
+                            ?.optString("text") ?: ""
 
-                    val artistBuilder = StringBuilder()
-                    if (artistRuns != null) {
-                        for (j in 0 until artistRuns.length()) {
-                            val t = artistRuns.optJSONObject(j)?.optString("text")
-                            if (!t.isNullOrBlank() && t != " • ") {
-                                if (artistBuilder.isNotEmpty()) artistBuilder.append(", ")
-                                artistBuilder.append(t)
-                                break
+                        val subRuns = card.optJSONObject("subtitle")?.optJSONArray("runs")
+                        var artist = "Artis"
+                        if (subRuns != null && subRuns.length() > 0) {
+                            for (r in 0 until subRuns.length()) {
+                                val t = subRuns.optJSONObject(r)?.optString("text") ?: ""
+                                if (t.isNotBlank() && t != " • " && !t.contains("Lagu") && !t.contains("Artis")) {
+                                    artist = t
+                                    break
+                                }
                             }
                         }
-                    }
-                    val artist = if (artistBuilder.isNotEmpty()) artistBuilder.toString() else "Artis"
 
-                    val videoId = item.optJSONObject("playlistItemData")?.optString("videoId")
-                        ?: item.optJSONObject("overlay")
-                            ?.optJSONObject("musicItemThumbnailOverlayRenderer")
-                            ?.optJSONObject("content")
-                            ?.optJSONObject("musicPlayButtonRenderer")
-                            ?.optJSONObject("playNavigationEndpoint")
-                            ?.optJSONObject("watchEndpoint")
-                            ?.optString("videoId") ?: ""
+                        var cardVideoId = ""
+                        val buttons = card.optJSONArray("buttons")
+                        if (buttons != null && buttons.length() > 0) {
+                            for (b in 0 until buttons.length()) {
+                                val cmd = buttons.optJSONObject(b)
+                                    ?.optJSONObject("buttonRenderer")
+                                    ?.optJSONObject("command")
+                                val vid = cmd?.optJSONObject("watchEndpoint")?.optString("videoId") ?: ""
+                                if (vid.isNotBlank()) {
+                                    cardVideoId = vid
+                                    break
+                                }
+                            }
+                        }
+                        if (cardVideoId.isBlank()) {
+                            cardVideoId = card.optJSONObject("title")
+                                ?.optJSONArray("runs")
+                                ?.optJSONObject(0)
+                                ?.optJSONObject("navigationEndpoint")
+                                ?.optJSONObject("watchEndpoint")
+                                ?.optString("videoId") ?: ""
+                        }
+                        if (cardVideoId.isBlank()) {
+                            cardVideoId = card.optJSONObject("onTap")
+                                ?.optJSONObject("watchEndpoint")
+                                ?.optString("videoId") ?: ""
+                        }
 
-                    val thumbs = item.optJSONObject("thumbnail")
-                        ?.optJSONObject("musicThumbnailRenderer")
-                        ?.optJSONObject("thumbnail")
-                        ?.optJSONArray("thumbnails")
+                        val cardThumbs = card.optJSONObject("thumbnail")
+                            ?.optJSONObject("musicThumbnailRenderer")
+                            ?.optJSONObject("thumbnail")
+                            ?.optJSONArray("thumbnails")
+                        val cardRawThumb = if (cardThumbs != null && cardThumbs.length() > 0) {
+                            cardThumbs.optJSONObject(cardThumbs.length() - 1)?.optString("url") ?: ""
+                        } else ""
 
-                    val rawThumb = if (thumbs != null && thumbs.length() > 0) {
-                        thumbs.optJSONObject(thumbs.length() - 1)?.optString("url") ?: ""
-                    } else ""
-                    val thumbUrl = upgradeThumbnail(rawThumb)
-
-                    val album = "RyFy Spotless"
-
-                    if (videoId.isNotBlank()) {
-                        list.add(
-                            Track(
-                                id = videoId,
-                                title = title,
-                                artist = artist,
-                                album = album,
-                                durationMs = 210000L,
-                                coverUrl = thumbUrl,
-                                videoId = videoId
+                        if (title.isNotBlank() && cardVideoId.isNotBlank()) {
+                            list.add(
+                                Track(
+                                    id = cardVideoId,
+                                    title = title,
+                                    artist = artist,
+                                    album = "RyFy Spotless",
+                                    durationMs = 210000L,
+                                    coverUrl = upgradeThumbnail(cardRawThumb),
+                                    videoId = cardVideoId
+                                )
                             )
-                        )
+                        }
+                    }
+
+                    // 2. Check musicShelfRenderer or itemSectionRenderer
+                    val items = section.optJSONObject("musicShelfRenderer")?.optJSONArray("contents")
+                        ?: section.optJSONObject("itemSectionRenderer")?.optJSONArray("contents")
+
+                    if (items != null) {
+                        for (i in 0 until items.length()) {
+                            val item = items.optJSONObject(i)?.optJSONObject("musicResponsiveListItemRenderer") ?: continue
+                            val flex = item.optJSONArray("flexColumns") ?: continue
+
+                            val title = flex.optJSONObject(0)
+                                ?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")
+                                ?.optJSONObject("text")
+                                ?.optJSONArray("runs")
+                                ?.optJSONObject(0)
+                                ?.optString("text", "Unknown Title") ?: "Unknown Title"
+
+                            val artistRuns = flex.optJSONObject(1)
+                                ?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")
+                                ?.optJSONObject("text")
+                                ?.optJSONArray("runs")
+
+                            val artistBuilder = StringBuilder()
+                            if (artistRuns != null) {
+                                for (j in 0 until artistRuns.length()) {
+                                    val t = artistRuns.optJSONObject(j)?.optString("text")
+                                    if (!t.isNullOrBlank() && t != " • ") {
+                                        if (artistBuilder.isNotEmpty()) artistBuilder.append(", ")
+                                        artistBuilder.append(t)
+                                        break
+                                    }
+                                }
+                            }
+                            val artist = if (artistBuilder.isNotEmpty()) artistBuilder.toString() else "Artis"
+
+                            var videoId = item.optJSONObject("playlistItemData")?.optString("videoId") ?: ""
+                            if (videoId.isBlank()) {
+                                videoId = item.optJSONObject("overlay")
+                                    ?.optJSONObject("musicItemThumbnailOverlayRenderer")
+                                    ?.optJSONObject("content")
+                                    ?.optJSONObject("musicPlayButtonRenderer")
+                                    ?.optJSONObject("playNavigationEndpoint")
+                                    ?.optJSONObject("watchEndpoint")
+                                    ?.optString("videoId") ?: ""
+                            }
+                            if (videoId.isBlank()) {
+                                videoId = flex.optJSONObject(0)
+                                    ?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")
+                                    ?.optJSONObject("text")
+                                    ?.optJSONArray("runs")
+                                    ?.optJSONObject(0)
+                                    ?.optJSONObject("navigationEndpoint")
+                                    ?.optJSONObject("watchEndpoint")
+                                    ?.optString("videoId") ?: ""
+                            }
+
+                            val thumbs = item.optJSONObject("thumbnail")
+                                ?.optJSONObject("musicThumbnailRenderer")
+                                ?.optJSONObject("thumbnail")
+                                ?.optJSONArray("thumbnails")
+
+                            val rawThumb = if (thumbs != null && thumbs.length() > 0) {
+                                thumbs.optJSONObject(thumbs.length() - 1)?.optString("url") ?: ""
+                            } else ""
+                            val thumbUrl = upgradeThumbnail(rawThumb)
+
+                            if (videoId.isNotBlank() && list.none { it.id == videoId }) {
+                                list.add(
+                                    Track(
+                                        id = videoId,
+                                        title = title,
+                                        artist = artist,
+                                        album = "RyFy Spotless",
+                                        durationMs = 210000L,
+                                        coverUrl = thumbUrl,
+                                        videoId = videoId
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
                 list
