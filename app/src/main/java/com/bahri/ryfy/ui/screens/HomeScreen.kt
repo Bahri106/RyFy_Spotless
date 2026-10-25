@@ -151,6 +151,8 @@ val INITIAL_RECOMMENDED_TRACKS = listOf(
     )
 )
 
+val SAMPLE_TRACKS = INITIAL_RECOMMENDED_TRACKS
+
 @Composable
 fun HomeScreen() {
     val greeting = remember {
