@@ -73,30 +73,40 @@ object PlayerManager {
             player.setMediaItem(mediaItem)
             player.prepare()
             player.play()
-        } else if (!track.videoId.isNullOrBlank()) {
+        } else {
             // Asynchronously resolve real audio stream & lyrics
             scope.launch {
-                val resolvedUrl = com.bahri.ryfy.data.api.MusicApiService.resolveStreamUrl(track.videoId)
-                val lyrics = com.bahri.ryfy.data.api.MusicApiService.fetchLyrics(track.title, track.artist)
-                val updated = track.copy(streamUrl = resolvedUrl, lyrics = lyrics)
-                _currentTrack.value = updated
+                var targetVideoId = track.videoId
+                var currentTrackInfo = track
 
-                if (!resolvedUrl.isNullOrBlank()) {
-                    val mediaItem = MediaItem.fromUri(resolvedUrl)
-                    player.setMediaItem(mediaItem)
-                    player.prepare()
-                    player.play()
-                } else {
-                    player.stop()
-                    _isPlaying.value = true
-                    startProgressPolling()
+                // Auto-resolve videoId if missing via YouTube Music search
+                if (targetVideoId.isNullOrBlank()) {
+                    val searchResults = com.bahri.ryfy.data.api.MusicApiService.searchSongs("${track.title} ${track.artist}")
+                    val match = searchResults.firstOrNull()
+                    if (match != null && !match.videoId.isNullOrBlank()) {
+                        targetVideoId = match.videoId
+                        currentTrackInfo = track.copy(
+                            videoId = match.videoId,
+                            coverUrl = if (track.coverUrl.isBlank()) match.coverUrl else track.coverUrl,
+                            durationMs = if (track.durationMs == 0L) match.durationMs else track.durationMs
+                        )
+                    }
+                }
+
+                if (!targetVideoId.isNullOrBlank()) {
+                    val resolvedUrl = com.bahri.ryfy.data.api.MusicApiService.resolveStreamUrl(targetVideoId)
+                    val lyrics = com.bahri.ryfy.data.api.MusicApiService.fetchLyrics(track.title, track.artist)
+                    val updated = currentTrackInfo.copy(streamUrl = resolvedUrl, lyrics = lyrics)
+                    _currentTrack.value = updated
+
+                    if (!resolvedUrl.isNullOrBlank()) {
+                        val mediaItem = MediaItem.fromUri(resolvedUrl)
+                        player.setMediaItem(mediaItem)
+                        player.prepare()
+                        player.play()
+                    }
                 }
             }
-        } else {
-            // Virtual mock simulation when no direct URL
-            player.stop()
-            _isPlaying.value = true
-            startProgressPolling()
         }
     }
 

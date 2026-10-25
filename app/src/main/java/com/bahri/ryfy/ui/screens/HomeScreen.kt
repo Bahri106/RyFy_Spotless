@@ -28,7 +28,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,7 +60,8 @@ val SAMPLE_TRACKS = listOf(
         album = "Komang - Single",
         durationMs = 222000,
         coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80",
-        isLiked = true
+        isLiked = true,
+        videoId = "M2QKS9tte9g"
     ),
     Track(
         id = "2",
@@ -65,7 +70,8 @@ val SAMPLE_TRACKS = listOf(
         album = "Fábula",
         durationMs = 243000,
         coverUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80",
-        isLiked = true
+        isLiked = true,
+        videoId = "2MyjWg7P00A"
     ),
     Track(
         id = "3",
@@ -74,7 +80,8 @@ val SAMPLE_TRACKS = listOf(
         album = "Untuk Dunia, Cinta, dan Kotornya",
         durationMs = 312000,
         coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80",
-        isLiked = false
+        isLiked = false,
+        videoId = "2A9Atl2hUkg"
     ),
     Track(
         id = "4",
@@ -83,7 +90,8 @@ val SAMPLE_TRACKS = listOf(
         album = "Nanti Kita Seperti Ini",
         durationMs = 239000,
         coverUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80",
-        isLiked = false
+        isLiked = false,
+        videoId = "V697wAtn6cI"
     ),
     Track(
         id = "5",
@@ -92,7 +100,8 @@ val SAMPLE_TRACKS = listOf(
         album = "Tak Segampang Itu - Single",
         durationMs = 231000,
         coverUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=500&auto=format&fit=crop&q=80",
-        isLiked = true
+        isLiked = true,
+        videoId = "gR_qbfGkwpc"
     )
 )
 
@@ -106,6 +115,22 @@ fun HomeScreen() {
             in 16..18 -> "Selamat sore"
             else -> "Selamat malam"
         }
+    }
+
+    var madeForYou by remember { mutableStateOf(SAMPLE_TRACKS) }
+    var topCharts by remember { mutableStateOf(SAMPLE_TRACKS.reversed()) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val hits = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Top Hits Indonesia")
+            if (hits.isNotEmpty()) {
+                topCharts = hits
+            }
+            val trending = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Lagu Pop Indonesia Terbaru")
+            if (trending.isNotEmpty()) {
+                madeForYou = trending
+            }
+        } catch (_: Exception) {}
     }
 
     LazyColumn(
@@ -159,7 +184,7 @@ fun HomeScreen() {
                                     .weight(1f)
                                     .height(56.dp)
                                     .clickable {
-                                        PlayerManager.playTrack(SAMPLE_TRACKS.first(), SAMPLE_TRACKS)
+                                        PlayerManager.playTrack(topCharts.firstOrNull() ?: SAMPLE_TRACKS.first(), topCharts)
                                     }
                             ) {
                                 Row(
@@ -211,10 +236,10 @@ fun HomeScreen() {
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(SAMPLE_TRACKS) { track ->
+                    items(madeForYou) { track ->
                         TrackCard(
                             track = track,
-                            onClick = { PlayerManager.playTrack(track, SAMPLE_TRACKS) }
+                            onClick = { PlayerManager.playTrack(track, madeForYou) }
                         )
                     }
                 }
@@ -235,10 +260,10 @@ fun HomeScreen() {
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(SAMPLE_TRACKS.reversed()) { track ->
+                    items(topCharts) { track ->
                         TrackCard(
                             track = track,
-                            onClick = { PlayerManager.playTrack(track, SAMPLE_TRACKS) }
+                            onClick = { PlayerManager.playTrack(track, topCharts) }
                         )
                     }
                 }

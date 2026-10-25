@@ -1,11 +1,12 @@
 {
-  "versionName": "1.0.2",
-  "versionCode": 3,
-  "publishedAt": "2026-10-25T08:00:00Z",
+  "versionName": "1.0.3",
+  "versionCode": 4,
+  "publishedAt": "2026-10-25T08:15:00Z",
   "changelog": [
-    "Fix audio streaming 00:00 (Invidious proxied stream to bypass Google 403 Forbidden)",
-    "Pencarian lagu YouTube Music & sinkronisasi lirik LRCLIB lancar",
-    "ExoPlayer error handler & range streaming optimization"
+    "Fix pemutaran lagu beranda (Dibuat untuk Anda & Tangga Lagu Teratas sekarang bisa diputar)",
+    "Auto-resolve videoId & stream audio fallback jika lagu diklik dari daftar mana pun",
+    "Beranda dinamis: otomatis muat lagu Top Hits Indonesia terkini dari YouTube Music",
+    "Fix audio streaming 00:00 via proxied stream bypass Google 403"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.2/app-debug.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.3/app-debug.apk"
 }
