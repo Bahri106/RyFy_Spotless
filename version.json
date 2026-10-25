@@ -1,13 +1,11 @@
 {
-  "versionName": "1.0.0",
-  "versionCode": 1,
-  "publishedAt": "2026-10-25T00:00:00Z",
+  "versionName": "1.0.1",
+  "versionCode": 2,
+  "publishedAt": "2026-10-25T07:00:00Z",
   "changelog": [
-    "Initial launch of RyFy Spotless v1.0.0",
-    "100% Ad-free and unlimited playback",
-    "Spotify Dark Mode UI 1:1",
-    "Media3 Background Playback & MediaSession integration",
-    "Over-The-Air (OTA) in-app updater system"
+    "Fase 2: Pencarian lagu & audio streaming nyata (Real YouTube Music Engine)",
+    "Sinkronisasi lirik real-time (LRCLIB Integration)",
+    "Pembaruan otomatis in-app OTA lancar"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.0/ryfy-debug.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.1/ryfy-debug.apk"
 }

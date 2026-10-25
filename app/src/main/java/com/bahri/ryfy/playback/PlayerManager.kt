@@ -69,8 +69,27 @@ object PlayerManager {
             player.setMediaItem(mediaItem)
             player.prepare()
             player.play()
+        } else if (!track.videoId.isNullOrBlank()) {
+            // Asynchronously resolve real audio stream & lyrics
+            scope.launch {
+                val resolvedUrl = com.bahri.ryfy.data.api.MusicApiService.resolveStreamUrl(track.videoId)
+                val lyrics = com.bahri.ryfy.data.api.MusicApiService.fetchLyrics(track.title, track.artist)
+                val updated = track.copy(streamUrl = resolvedUrl, lyrics = lyrics)
+                _currentTrack.value = updated
+
+                if (!resolvedUrl.isNullOrBlank()) {
+                    val mediaItem = MediaItem.fromUri(resolvedUrl)
+                    player.setMediaItem(mediaItem)
+                    player.prepare()
+                    player.play()
+                } else {
+                    player.stop()
+                    _isPlaying.value = true
+                    startProgressPolling()
+                }
+            }
         } else {
-            // Virtual mock/stream simulation when no direct URL
+            // Virtual mock simulation when no direct URL
             player.stop()
             _isPlaying.value = true
             startProgressPolling()

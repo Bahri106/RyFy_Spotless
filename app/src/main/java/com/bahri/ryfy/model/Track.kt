@@ -8,6 +8,8 @@ data class Track(
     val durationMs: Long,
     val coverUrl: String,
     val streamUrl: String? = null,
+    val videoId: String? = null,
+    val lyrics: String? = null,
     val isLiked: Boolean = false
 )
 

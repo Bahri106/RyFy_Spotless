@@ -360,9 +360,10 @@ fun NowPlayingDialog(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Nikmati audio berkualitas tinggi 100% bebas iklan di RyFy Spotless.",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            text = if (!track.lyrics.isNullOrBlank()) track.lyrics!! else "Nikmati audio berkualitas tinggi 100% bebas iklan di RyFy Spotless.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 22.sp,
                             color = SpotifyText
                         )
                     }
