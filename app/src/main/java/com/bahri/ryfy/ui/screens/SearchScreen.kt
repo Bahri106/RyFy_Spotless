@@ -193,7 +193,7 @@ fun SearchScreen() {
                     SearchResultRow(
                         track = track,
                         onClick = {
-                            PlayerManager.playTrack(track, searchResults)
+                            PlayerManager.playTrack(track)
                         }
                     )
                 }

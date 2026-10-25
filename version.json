@@ -1,12 +1,14 @@
 {
-  "versionName": "1.0.3",
-  "versionCode": 4,
-  "publishedAt": "2026-10-25T08:15:00Z",
+  "versionName": "1.0.4",
+  "versionCode": 5,
+  "publishedAt": "2026-10-25T09:10:00Z",
   "changelog": [
-    "Fix pemutaran lagu beranda (Dibuat untuk Anda & Tangga Lagu Teratas sekarang bisa diputar)",
-    "Auto-resolve videoId & stream audio fallback jika lagu diklik dari daftar mana pun",
-    "Beranda dinamis: otomatis muat lagu Top Hits Indonesia terkini dari YouTube Music",
-    "Fix audio streaming 00:00 via proxied stream bypass Google 403"
+    "Stabilitas Audio: Pasang ExoPlayer SimpleCache 250MB & auto-reconnect agar pemutaran tidak putus di tengah lagu",
+    "Antrean Relevan (Artist Radio): Lagu berikutnya otomatis memutar karya dari artis yang sama, bukan hasil search acak",
+    "Tipografi Resmi Spotify: Ekstrak & integrasi font resmi Spotify Mix UI (Regular, Bold, Title)",
+    "Now Playing Header: Ganti YouTube Music jadi RyFy Spotless, dan nama artis bisa diklik untuk buka diskografi/karya artis",
+    "Beranda Dinamis: Greeting waktu murni, filter chip, carousel Rekomendasi Hari Ini, dan list vertikal Lagu Populer Teratas",
+    "Optimasi APK: R8 ProGuard minified & resource shrinker aktif (1 classes.dex, ukuran ramping ~16-17 MB)"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.3/app-debug.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.4/app-release.apk"
 }

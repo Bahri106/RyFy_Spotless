@@ -1,9 +1,18 @@
 package com.bahri.ryfy.playback
 
 import android.content.Context
+import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +23,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 object PlayerManager {
+    private const val TAG = "PlayerManager"
     private var exoPlayer: ExoPlayer? = null
     private val scope = CoroutineScope(Dispatchers.Main)
     private var progressJob: Job? = null
+    private var simpleCache: SimpleCache? = null
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
     val currentTrack: StateFlow<Track?> = _currentTrack.asStateFlow()
@@ -38,9 +50,40 @@ object PlayerManager {
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
 
+    @Synchronized
+    private fun getCache(context: Context): SimpleCache {
+        return simpleCache ?: run {
+            val cacheFolder = File(context.applicationContext.cacheDir, "media_cache")
+            val evictor = LeastRecentlyUsedCacheEvictor(250 * 1024 * 1024) // 250 MB
+            val dbProvider = StandaloneDatabaseProvider(context.applicationContext)
+            SimpleCache(cacheFolder, evictor, dbProvider).also { simpleCache = it }
+        }
+    }
+
     fun init(context: Context) {
         if (exoPlayer != null) return
-        val player = ExoPlayer.Builder(context.applicationContext).build()
+
+        val appContext = context.applicationContext
+
+        // High reliability HTTP Data Source with long timeout & auto-redirects
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.4")
+            .setConnectTimeoutMs(20000)
+            .setReadTimeoutMs(30000)
+            .setAllowCrossProtocolRedirects(true)
+
+        // Cache Data Source saves chunks locally to survive proxy drops
+        val cacheDataSourceFactory = CacheDataSource.Factory()
+            .setCache(getCache(appContext))
+            .setUpstreamDataSourceFactory(httpDataSourceFactory)
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+        val mediaSourceFactory = DefaultMediaSourceFactory(cacheDataSourceFactory)
+
+        val player = ExoPlayer.Builder(appContext)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build()
+
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
                 _isPlaying.value = playing
@@ -53,8 +96,22 @@ object PlayerManager {
                 }
             }
 
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                android.util.Log.e("PlayerManager", "Playback error: ${error.errorCodeName} - ${error.message}", error)
+            override fun onPlayerError(error: PlaybackException) {
+                Log.e(TAG, "Playback error [${error.errorCodeName}]: ${error.message}", error)
+                // Auto reconnect on socket drop
+                val cur = _currentTrack.value
+                val lastPos = _currentPositionMs.value
+                if (cur != null && !cur.videoId.isNullOrBlank()) {
+                    scope.launch {
+                        delay(1200)
+                        val retryUrl = MusicApiService.resolveStreamUrl(cur.videoId)
+                        if (!retryUrl.isNullOrBlank()) {
+                            exoPlayer?.setMediaItem(MediaItem.fromUri(retryUrl), lastPos)
+                            exoPlayer?.prepare()
+                            exoPlayer?.play()
+                        }
+                    }
+                }
             }
         })
         exoPlayer = player
@@ -62,8 +119,22 @@ object PlayerManager {
 
     fun playTrack(track: Track, newQueue: List<Track>? = null) {
         val player = exoPlayer ?: return
-        if (newQueue != null) {
+        if (newQueue != null && newQueue.isNotEmpty()) {
             _queue.value = newQueue
+        } else {
+            _queue.value = listOf(track)
+            // Auto artist radio: fetch more works from the same artist so next tracks are relevant
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val artistTracks = MusicApiService.searchSongs(track.artist)
+                        .filter { it.title.trim().lowercase() != track.title.trim().lowercase() }
+                    if (artistTracks.isNotEmpty()) {
+                        _queue.value = listOf(track) + artistTracks
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Artist radio queue error: ${e.message}")
+                }
+            }
         }
         _currentTrack.value = track
 
@@ -74,14 +145,13 @@ object PlayerManager {
             player.prepare()
             player.play()
         } else {
-            // Asynchronously resolve real audio stream & lyrics
+            // Asynchronously resolve stream & lyrics
             scope.launch {
                 var targetVideoId = track.videoId
                 var currentTrackInfo = track
 
-                // Auto-resolve videoId if missing via YouTube Music search
                 if (targetVideoId.isNullOrBlank()) {
-                    val searchResults = com.bahri.ryfy.data.api.MusicApiService.searchSongs("${track.title} ${track.artist}")
+                    val searchResults = MusicApiService.searchSongs("${track.title} ${track.artist}")
                     val match = searchResults.firstOrNull()
                     if (match != null && !match.videoId.isNullOrBlank()) {
                         targetVideoId = match.videoId
@@ -94,8 +164,8 @@ object PlayerManager {
                 }
 
                 if (!targetVideoId.isNullOrBlank()) {
-                    val resolvedUrl = com.bahri.ryfy.data.api.MusicApiService.resolveStreamUrl(targetVideoId)
-                    val lyrics = com.bahri.ryfy.data.api.MusicApiService.fetchLyrics(track.title, track.artist)
+                    val resolvedUrl = MusicApiService.resolveStreamUrl(targetVideoId)
+                    val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
                     val updated = currentTrackInfo.copy(streamUrl = resolvedUrl, lyrics = lyrics)
                     _currentTrack.value = updated
 
@@ -132,7 +202,7 @@ object PlayerManager {
         val current = _currentTrack.value ?: return
         val currentIndex = currentList.indexOfFirst { it.id == current.id }
         if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
-            playTrack(currentList[currentIndex + 1])
+            playTrack(currentList[currentIndex + 1], currentList)
         }
     }
 
@@ -141,7 +211,7 @@ object PlayerManager {
         val current = _currentTrack.value ?: return
         val currentIndex = currentList.indexOfFirst { it.id == current.id }
         if (currentIndex > 0) {
-            playTrack(currentList[currentIndex - 1])
+            playTrack(currentList[currentIndex - 1], currentList)
         } else {
             seekTo(0)
         }

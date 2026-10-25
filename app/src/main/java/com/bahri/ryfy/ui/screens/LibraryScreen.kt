@@ -120,8 +120,8 @@ fun LibraryScreen() {
         // Custom Local Playlist row
         item {
             LibraryRow(
-                title = "Favorit Saiful Bahri",
-                subtitle = "Playlist oleh Saiful Bahri",
+                title = "Koleksi Favorit",
+                subtitle = "Daftar putar tersimpan di perangkat",
                 brush = Brush.linearGradient(listOf(Color(0xFF8C1932), Color(0xFFE91429))),
                 icon = Icons.Default.MusicNote,
                 onClick = {

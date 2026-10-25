@@ -121,13 +121,15 @@ object MusicApiService {
                         thumbs.optJSONObject(thumbs.length() - 1)?.optString("url") ?: ""
                     } else ""
 
+                    val album = "RyFy Spotless"
+
                     if (videoId.isNotBlank()) {
                         list.add(
                             Track(
                                 id = videoId,
                                 title = title,
                                 artist = artist,
-                                album = "YouTube Music",
+                                album = album,
                                 durationMs = 210000L,
                                 coverUrl = thumbUrl,
                                 videoId = videoId

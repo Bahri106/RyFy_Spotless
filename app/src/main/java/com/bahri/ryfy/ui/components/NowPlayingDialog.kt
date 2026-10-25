@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,15 +36,19 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,9 +57,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +67,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
+import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
+import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.ui.theme.SpotifyBlack
 import com.bahri.ryfy.ui.theme.SpotifyDark
 import com.bahri.ryfy.ui.theme.SpotifyElevated
@@ -89,6 +98,7 @@ fun NowPlayingDialog(
 ) {
     var isDraggingSlider by remember { mutableStateOf(false) }
     var dragPositionMs by remember { mutableFloatStateOf(0f) }
+    var showArtistSheet by remember { mutableStateOf(false) }
 
     val currentSliderPosition = if (isDraggingSlider) {
         dragPositionMs
@@ -140,7 +150,7 @@ fun NowPlayingDialog(
                             color = SpotifyTextSecondary
                         )
                         Text(
-                            text = track.album.ifBlank { "RyFy Spotless" },
+                            text = if (track.album.isBlank() || track.album == "YouTube Music") "RyFy Spotless" else track.album,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = SpotifyText,
@@ -197,7 +207,11 @@ fun NowPlayingDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
                         Text(
                             text = track.title,
                             style = MaterialTheme.typography.headlineMedium,
@@ -209,9 +223,14 @@ fun NowPlayingDialog(
                         Text(
                             text = track.artist,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = SpotifyTextSecondary,
+                            color = SpotifyGreen,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { showArtistSheet = true }
+                                .padding(vertical = 2.dp)
                         )
                     }
 
@@ -291,7 +310,7 @@ fun NowPlayingDialog(
                         )
                     }
 
-                    // Main Big Green Play/Pause
+                    // Main Big White Play/Pause Button
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -366,6 +385,130 @@ fun NowPlayingDialog(
                             lineHeight = 22.sp,
                             color = SpotifyText
                         )
+                    }
+                }
+            }
+
+            // Artist Discography BottomSheet
+            if (showArtistSheet) {
+                val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                var artistTracks by remember { mutableStateOf<List<Track>>(emptyList()) }
+                var isLoadingArtist by remember { mutableStateOf(true) }
+
+                LaunchedEffect(track.artist) {
+                    isLoadingArtist = true
+                    try {
+                        val results = MusicApiService.searchSongs(track.artist)
+                        artistTracks = results
+                    } catch (_: Exception) {}
+                    isLoadingArtist = false
+                }
+
+                ModalBottomSheet(
+                    onDismissRequest = { showArtistSheet = false },
+                    sheetState = sheetState,
+                    containerColor = SpotifyElevated,
+                    contentColor = SpotifyText
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 32.dp)
+                    ) {
+                        Text(
+                            text = "Karya dari ${track.artist}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyText,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        if (isLoadingArtist) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = SpotifyGreen)
+                            }
+                        } else if (artistTracks.isEmpty()) {
+                            Text(
+                                text = "Tidak ditemukan lagu lain dari artis ini.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SpotifyTextSecondary,
+                                modifier = Modifier.padding(vertical = 24.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(340.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(artistTracks) { aTrack ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showArtistSheet = false
+                                                PlayerManager.playTrack(aTrack)
+                                            }
+                                            .padding(vertical = 6.dp)
+                                    ) {
+                                        if (aTrack.coverUrl.isNotBlank()) {
+                                            AsyncImage(
+                                                model = aTrack.coverUrl,
+                                                contentDescription = aTrack.title,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                            )
+                                        } else {
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(SpotifyHighlight)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MusicNote,
+                                                    contentDescription = null,
+                                                    tint = SpotifyTextSecondary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = aTrack.title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (aTrack.id == track.id) SpotifyGreen else SpotifyText,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = aTrack.artist,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = SpotifyTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

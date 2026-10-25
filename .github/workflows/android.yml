@@ -33,13 +33,23 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Build Android Debug APK
-        run: ./gradlew assembleDebug --build-cache --parallel --stacktrace
+      - name: Build Android Release APK (Minified & Single Dex)
+        run: ./gradlew assembleRelease --build-cache --parallel --stacktrace
+
+      - name: Inspect APK Details
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -f "$APK_PATH" ]; then
+            echo "=== APK File Size ==="
+            ls -lh "$APK_PATH"
+            echo "=== Classes Dex Count ==="
+            unzip -l "$APK_PATH" | grep "classes.*dex" || true
+          fi
 
       - name: Upload APK to Catbox / Litterbox Mirror
         id: upload-mirror
         run: |
-          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           if [ -f "$APK_PATH" ]; then
             echo "Uploading $APK_PATH to Litterbox..."
             UPLOAD_URL=$(curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@$APK_PATH" https://litterbox.catbox.moe/resources/internals/api.php || true)
@@ -50,6 +60,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ryfy-spotless-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ryfy-spotless-release-apk
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 14

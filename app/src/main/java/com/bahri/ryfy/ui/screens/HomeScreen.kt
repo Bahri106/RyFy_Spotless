@@ -18,18 +18,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -117,8 +121,13 @@ fun HomeScreen() {
         }
     }
 
+    var selectedFilterIndex by remember { mutableIntStateOf(0) }
+    val filters = listOf("Semua", "Musik", "Podcast & Acara")
+
     var madeForYou by remember { mutableStateOf(SAMPLE_TRACKS) }
     var topCharts by remember { mutableStateOf(SAMPLE_TRACKS.reversed()) }
+    var recommendations by remember { mutableStateOf(SAMPLE_TRACKS) }
+    var popularTracks by remember { mutableStateOf(SAMPLE_TRACKS) }
 
     LaunchedEffect(Unit) {
         try {
@@ -130,28 +139,60 @@ fun HomeScreen() {
             if (trending.isNotEmpty()) {
                 madeForYou = trending
             }
+            val recs = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Indie Indonesia Populer")
+            if (recs.isNotEmpty()) {
+                recommendations = recs
+            }
+            val popular = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Viral Hits TikTok Indonesia")
+            if (popular.isNotEmpty()) {
+                popularTracks = popular
+            }
         } catch (_: Exception) {}
     }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Greeting Header
+        // Greeting Header (Time-based only, no user account name)
         item {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Text(
-                    text = "$greeting, Saiful Bahri",
+                    text = greeting,
                     style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
                     color = SpotifyText
                 )
-                Text(
-                    text = "RyFy Spotless · Bebas Iklan & Tanpa Batas",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SpotifyGreen,
-                    fontWeight = FontWeight.SemiBold
-                )
+
+                // Spotify Filter Chips Row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    filters.forEachIndexed { index, filterName ->
+                        val isSelected = selectedFilterIndex == index
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(if (isSelected) SpotifyGreen else SpotifyElevated)
+                                .clickable { selectedFilterIndex = index }
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                text = filterName,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.Black else SpotifyText
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -222,7 +263,7 @@ fun HomeScreen() {
             }
         }
 
-        // Made For You Section
+        // Section 1: Made For You
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -246,7 +287,7 @@ fun HomeScreen() {
             }
         }
 
-        // Charts Section
+        // Section 2: Charts
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -265,6 +306,120 @@ fun HomeScreen() {
                             track = track,
                             onClick = { PlayerManager.playTrack(track, topCharts) }
                         )
+                    }
+                }
+            }
+        }
+
+        // Section 3: Recommendations Today (Fill empty space)
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Rekomendasi Hari Ini",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(recommendations) { track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { PlayerManager.playTrack(track, recommendations) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section 4: Vertical List of Popular Songs (Scrollable long down)
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Lagu Populer Teratas",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText
+                )
+
+                popularTracks.forEachIndexed { index, track ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { PlayerManager.playTrack(track, popularTracks) }
+                            .padding(vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "${index + 1}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyTextSecondary,
+                            modifier = Modifier.width(28.dp)
+                        )
+
+                        if (track.coverUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = track.coverUrl,
+                                contentDescription = track.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                            )
+                        } else {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(SpotifyHighlight)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = null,
+                                    tint = SpotifyTextSecondary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = track.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = SpotifyText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = track.artist,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SpotifyTextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        IconButton(onClick = { PlayerManager.playTrack(track, popularTracks) }) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = SpotifyTextSecondary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }

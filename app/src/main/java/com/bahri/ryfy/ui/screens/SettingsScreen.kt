@@ -108,14 +108,14 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Saiful Bahri",
+                            text = "Pengguna RyFy",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = SpotifyText
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "RyFy Spotless · Bebas Iklan Aktif",
+                            text = "Mode Tamu · 100% Bebas Iklan",
                             style = MaterialTheme.typography.bodySmall,
                             color = SpotifyGreen,
                             fontWeight = FontWeight.SemiBold
