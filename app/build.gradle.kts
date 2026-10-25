@@ -12,11 +12,11 @@ android {
         applicationId = "com.bahri.ryfy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.0.10"
+        versionCode = 12
+        versionName = "1.0.11"
 
-        buildConfigField("String", "VERSION_NAME", "\"1.0.10\"")
-        buildConfigField("int", "VERSION_CODE", "11")
+        buildConfigField("String", "VERSION_NAME", "\"1.0.11\"")
+        buildConfigField("int", "VERSION_CODE", "12")
         buildConfigField("String", "UPDATE_CHECK_URL", "\"https://raw.githubusercontent.com/Bahri106/RyFy_Spotless/main/version.json\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -82,7 +82,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    // Media3 (ExoPlayer & Session for background playback)
+    // Media3 & MediaStyle Notification Support
+    implementation("androidx.media:media:1.7.0")
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui)

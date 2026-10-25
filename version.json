@@ -1,13 +1,13 @@
 {
-  "versionName": "1.0.10",
-  "versionCode": 11,
-  "publishedAt": "2026-10-25T13:20:00Z",
+  "versionName": "1.0.11",
+  "versionCode": 12,
+  "publishedAt": "2026-10-25T13:40:00Z",
   "changelog": [
-    "Ultra-Fast Zero-Delay Playback: Putar audio instan (< 250 ms), bypass pre-check lambat, dan pemuatan lirik di latar belakang",
-    "Fix Crash 'Unfortunately RyFy has stopped': Rules ProGuard lengkap untuk androidx.media3 dan proteksi inisialisasi startup berlapis",
-    "Eliminasi Bug Foreground Service: Menghapus startForegroundService sekuensial yang menyebabkan force close sistem Android",
-    "Automated Crash Reporter (Bot Telegram): Pelaporan error otomatis ke bot Telegram Saiful Bahri via proxy aman tanpa bocor token",
-    "Mirror Streaming Berkecepatan Tinggi: Integrasi yewtu.be dan yt.chocolatemoo53.com dengan auto-reconnect fallback"
+    "Lockscreen & Status Bar Media Notification: Tampilan widget pemutar musik resmi ala Spotify 1:1 di layar kunci, status bar, dan dynamic island",
+    "Kontrol Penuh Lockscreen: Tombol Sebelumnya, Putar/Jeda responsif, Berikutnya, dan cover art album beresolusi tinggi",
+    "Dukungan Izin Android 13-15 (POST_NOTIFICATIONS): Dialog izin notifikasi otomatis saat app pertama kali dibuka",
+    "PlaybackActionReceiver: Menangani interaksi kontrol musik dari lockscreen secara instan tanpa perlu membuka aplikasi",
+    "Optimasi R8 & Single Dex: Tetap 1 file classes.dex dan ukuran ramping ~4.2 MB"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.10/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.11/app-release.apk"
 }

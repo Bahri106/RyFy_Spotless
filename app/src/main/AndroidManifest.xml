@@ -63,6 +63,16 @@
             </intent-filter>
         </activity-alias>
 
+        <receiver
+            android:name=".playback.PlaybackActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bahri.ryfy.ACTION_PLAY_PAUSE" />
+                <action android:name="com.bahri.ryfy.ACTION_NEXT" />
+                <action android:name="com.bahri.ryfy.ACTION_PREV" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".playback.MediaPlaybackService"
             android:exported="true"

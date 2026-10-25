@@ -1,5 +1,7 @@
 package com.bahri.ryfy
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -35,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.bahri.ryfy.data.FavoritesManager
 import com.bahri.ryfy.playback.PlayerManager
+import com.bahri.ryfy.playback.RyFyNotificationManager
 import com.bahri.ryfy.ui.components.MiniPlayer
 import com.bahri.ryfy.ui.components.NowPlayingDialog
 import com.bahri.ryfy.ui.dialogs.WhatsNewDialog
@@ -65,6 +68,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         updateManager = UpdateManager(this)
+        RyFyNotificationManager.init(this)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
 
         setContent {
             RyFyTheme {

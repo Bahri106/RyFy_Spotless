@@ -9,3 +9,9 @@
 # Media3 & ExoPlayer - Keep all classes, interfaces, AIDL stubs
 -keep class androidx.media3.** { *; }
 -dontwarn androidx.media3.**
+
+# MediaStyle Notification & Compat Token
+-keep class androidx.media.** { *; }
+-dontwarn androidx.media.**
+-keep class android.support.v4.media.** { *; }
+-dontwarn android.support.v4.media.**

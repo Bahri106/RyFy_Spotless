@@ -136,6 +136,7 @@ object PlayerManager {
                 } else {
                     stopProgressPolling()
                 }
+                updateSystemNotification()
             }
 
             override fun onPlaybackStateChanged(state: Int) {
@@ -172,6 +173,15 @@ object PlayerManager {
             mediaSession = MediaSession.Builder(app, player).build()
         }.onFailure {
             Log.w(TAG, "MediaSession initialization skipped: ${it.message}")
+        }
+        RyFyNotificationManager.init(app)
+    }
+
+    fun updateSystemNotification() {
+        val track = _currentTrack.value ?: return
+        val playing = _isPlaying.value
+        appContext?.let { ctx ->
+            RyFyNotificationManager.update(ctx, track, playing)
         }
     }
 
@@ -236,6 +246,7 @@ object PlayerManager {
             player.prepare()
             player.play()
             _isPlaying.value = true
+            updateSystemNotification()
             prefetchNextTrack()
         } else {
             playbackJob = scope.launch {
@@ -273,6 +284,7 @@ object PlayerManager {
                         player.prepare()
                         player.play()
                         _isPlaying.value = true
+                        updateSystemNotification()
                         prefetchNextTrack()
 
                         // Asynchronous non-blocking background lyrics retrieval
