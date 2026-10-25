@@ -28,6 +28,16 @@ object MusicApiService {
         "https://invidious.tiekoetter.com"
     )
 
+    fun upgradeThumbnail(url: String): String {
+        if (url.isBlank()) return url
+        return url
+            .replace(Regex("=w\\d+-h\\d+[^\"'\\s]*"), "=w1080-h1080-l90-rj")
+            .replace(Regex("=s\\d+[^\"'\\s]*"), "=s1080")
+            .replace("/hqdefault.jpg", "/maxresdefault.jpg")
+            .replace("/mqdefault.jpg", "/maxresdefault.jpg")
+            .replace("/default.jpg", "/maxresdefault.jpg")
+    }
+
     /**
      * Search songs via YouTube Music Innertube API (Real music database, no API key needed).
      */
@@ -117,9 +127,10 @@ object MusicApiService {
                         ?.optJSONObject("thumbnail")
                         ?.optJSONArray("thumbnails")
 
-                    val thumbUrl = if (thumbs != null && thumbs.length() > 0) {
+                    val rawThumb = if (thumbs != null && thumbs.length() > 0) {
                         thumbs.optJSONObject(thumbs.length() - 1)?.optString("url") ?: ""
                     } else ""
+                    val thumbUrl = upgradeThumbnail(rawThumb)
 
                     val album = "RyFy Spotless"
 

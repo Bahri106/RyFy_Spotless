@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -40,13 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.bahri.ryfy.R
+import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.ui.theme.SpotifyElevated
@@ -56,56 +59,95 @@ import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
 import java.util.Calendar
 
-val SAMPLE_TRACKS = listOf(
-    Track(
-        id = "1",
-        title = "Komang",
+data class ArtistMix(
+    val title: String,
+    val artist: String,
+    val subtitle: String,
+    val coverUrl: String,
+    val headerColor: Color
+)
+
+val ARTIST_MIXES = listOf(
+    ArtistMix(
+        title = "Mix Raim Laode",
         artist = "Raim Laode",
-        album = "Komang - Single",
-        durationMs = 222000,
-        coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80",
+        subtitle = "Bernadya, Nadin Amizah, dan lainnya",
+        coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1080&auto=format&fit=crop&q=90",
+        headerColor = Color(0xFFB02897)
+    ),
+    ArtistMix(
+        title = "Mix Hindia",
+        artist = "Hindia",
+        subtitle = "Lomba Sihir, Feast, dan lainnya",
+        coverUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1080&auto=format&fit=crop&q=90",
+        headerColor = Color(0xFF1E3264)
+    ),
+    ArtistMix(
+        title = "Mix Bernadya",
+        artist = "Bernadya",
+        subtitle = "Nadin Amizah, Tiara Andini, dan lainnya",
+        coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1080&auto=format&fit=crop&q=90",
+        headerColor = Color(0xFFE8115B)
+    ),
+    ArtistMix(
+        title = "Mix Nadin Amizah",
+        artist = "Nadin Amizah",
+        subtitle = "Sal Priadi, Kunto Aji, dan lainnya",
+        coverUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1080&auto=format&fit=crop&q=90",
+        headerColor = Color(0xFF503750)
+    )
+)
+
+val INITIAL_RECOMMENDED_TRACKS = listOf(
+    Track(
+        id = "raim_1",
+        title = "Dialog Rindu",
+        artist = "Raim Laode",
+        album = "RyFy Spotless",
+        durationMs = 210000,
+        coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1080&auto=format&fit=crop&q=90",
         isLiked = true,
         videoId = "M2QKS9tte9g"
     ),
     Track(
-        id = "2",
-        title = "Sial",
-        artist = "Mahalini",
-        album = "Fábula",
-        durationMs = 243000,
-        coverUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80",
-        isLiked = true,
-        videoId = "2MyjWg7P00A"
-    ),
-    Track(
-        id = "3",
-        title = "Rayuan Perempuan Gila",
+        id = "nadin_1",
+        title = "Semua Aku Dirayakan",
         artist = "Nadin Amizah",
-        album = "Untuk Dunia, Cinta, dan Kotornya",
+        album = "RyFy Spotless",
         durationMs = 312000,
-        coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80",
-        isLiked = false,
+        coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1080&auto=format&fit=crop&q=90",
+        isLiked = true,
         videoId = "2A9Atl2hUkg"
     ),
     Track(
-        id = "4",
-        title = "Nanti Kita Seperti Ini",
-        artist = "Batas Senja",
-        album = "Nanti Kita Seperti Ini",
-        durationMs = 239000,
-        coverUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80",
+        id = "nidji_1",
+        title = "Hapus Aku",
+        artist = "Nidji",
+        album = "RyFy Spotless",
+        durationMs = 250000,
+        coverUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1080&auto=format&fit=crop&q=90",
         isLiked = false,
-        videoId = "V697wAtn6cI"
+        videoId = "2MyjWg7P00A"
     ),
     Track(
-        id = "5",
-        title = "Tak Segampang Itu",
-        artist = "Anggi Marito",
-        album = "Tak Segampang Itu - Single",
-        durationMs = 231000,
-        coverUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=500&auto=format&fit=crop&q=80",
-        isLiked = true,
+        id = "raim_2",
+        title = "Keluarga Bahagia (Suara 1)",
+        artist = "Raim Laode",
+        album = "RyFy Spotless",
+        durationMs = 222000,
+        coverUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1080&auto=format&fit=crop&q=90",
+        isLiked = false,
         videoId = "gR_qbfGkwpc"
+    ),
+    Track(
+        id = "nadin_2",
+        title = "Suar",
+        artist = "Nadin Amizah",
+        album = "RyFy Spotless",
+        durationMs = 260000,
+        coverUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1080&auto=format&fit=crop&q=90",
+        isLiked = false,
+        videoId = "V697wAtn6cI"
     )
 )
 
@@ -122,30 +164,25 @@ fun HomeScreen() {
     }
 
     var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filters = listOf("Semua", "Musik", "Podcast & Acara")
+    val filters = listOf("Semua", "Musik", "Podcast")
 
-    var madeForYou by remember { mutableStateOf(SAMPLE_TRACKS) }
-    var topCharts by remember { mutableStateOf(SAMPLE_TRACKS.reversed()) }
-    var recommendations by remember { mutableStateOf(SAMPLE_TRACKS) }
-    var popularTracks by remember { mutableStateOf(SAMPLE_TRACKS) }
+    var artistMixTracks by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
+    var topCharts by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
+    var radioStations by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
 
     LaunchedEffect(Unit) {
         try {
-            val hits = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Top Hits Indonesia")
+            val hits = MusicApiService.searchSongs("Raim Laode Nadin Amizah Bernadya")
             if (hits.isNotEmpty()) {
-                topCharts = hits
+                artistMixTracks = hits
             }
-            val trending = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Lagu Pop Indonesia Terbaru")
-            if (trending.isNotEmpty()) {
-                madeForYou = trending
+            val charts = MusicApiService.searchSongs("Top Hits Indonesia 2026")
+            if (charts.isNotEmpty()) {
+                topCharts = charts
             }
-            val recs = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Indie Indonesia Populer")
-            if (recs.isNotEmpty()) {
-                recommendations = recs
-            }
-            val popular = com.bahri.ryfy.data.api.MusicApiService.searchSongs("Viral Hits TikTok Indonesia")
-            if (popular.isNotEmpty()) {
-                popularTracks = popular
+            val radio = MusicApiService.searchSongs("Radio Artis Populer Indonesia")
+            if (radio.isNotEmpty()) {
+                radioStations = radio
             }
         } catch (_: Exception) {}
     }
@@ -155,7 +192,7 @@ fun HomeScreen() {
         contentPadding = PaddingValues(top = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Greeting Header (Time-based only, no user account name)
+        // Greeting Header (Time-based only)
         item {
             Column(
                 modifier = Modifier
@@ -196,146 +233,28 @@ fun HomeScreen() {
             }
         }
 
-        // Quick Grid Playlists (6 items, 2 columns)
+        // Section 1: Artist Mix Cards (Spotify Mix 1:1)
         item {
-            val quickItems = listOf(
-                "Lagu yang Disukai" to Icons.Default.Favorite,
-                "Top Hits Indonesia" to Icons.Default.MusicNote,
-                "Daily Mix 1" to Icons.Default.MusicNote,
-                "Rock Classics" to Icons.Default.MusicNote,
-                "Deep Focus" to Icons.Default.MusicNote,
-                "Release Radar" to Icons.Default.MusicNote
-            )
-
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                for (row in 0 until 3) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        for (col in 0 until 2) {
-                            val item = quickItems[row * 2 + col]
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = SpotifyElevated,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(56.dp)
-                                    .clickable {
-                                        PlayerManager.playTrack(topCharts.firstOrNull() ?: SAMPLE_TRACKS.first(), topCharts)
-                                    }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .background(if (item.first == "Lagu yang Disukai") Color(0xFF431885) else SpotifyHighlight)
-                                    ) {
-                                        Icon(
-                                            imageVector = item.second,
-                                            contentDescription = null,
-                                            tint = SpotifyText,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = item.first,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SpotifyText,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(ARTIST_MIXES) { mix ->
+                        MixCard(
+                            mix = mix,
+                            onClick = {
+                                val match = artistMixTracks.find { it.artist.contains(mix.artist, ignoreCase = true) }
+                                    ?: artistMixTracks.first()
+                                PlayerManager.playTrack(match)
                             }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section 1: Made For You
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Dibuat untuk Anda",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = SpotifyText,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(madeForYou) { track ->
-                        TrackCard(
-                            track = track,
-                            onClick = { PlayerManager.playTrack(track, madeForYou) }
                         )
                     }
                 }
             }
         }
 
-        // Section 2: Charts
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Tangga Lagu Teratas",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = SpotifyText,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(topCharts) { track ->
-                        TrackCard(
-                            track = track,
-                            onClick = { PlayerManager.playTrack(track, topCharts) }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Section 3: Recommendations Today (Fill empty space)
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Rekomendasi Hari Ini",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = SpotifyText,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(recommendations) { track ->
-                        TrackCard(
-                            track = track,
-                            onClick = { PlayerManager.playTrack(track, recommendations) }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Section 4: Vertical List of Popular Songs (Scrollable long down)
+        // Section 2: "Raim Laode, Bernadya, Nadin Amizah, dan lainnya" (1:1 with Screenshot)
         item {
             Column(
                 modifier = Modifier
@@ -344,42 +263,35 @@ fun HomeScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Lagu Populer Teratas",
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = "Raim Laode, Bernadya, Nadin Amizah, dan lainnya",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = SpotifyText
                 )
 
-                popularTracks.forEachIndexed { index, track ->
+                artistMixTracks.take(5).forEach { track ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { PlayerManager.playTrack(track, popularTracks) }
+                            .clickable { PlayerManager.playTrack(track, artistMixTracks) }
                             .padding(vertical = 6.dp)
                     ) {
-                        Text(
-                            text = "${index + 1}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = SpotifyTextSecondary,
-                            modifier = Modifier.width(28.dp)
-                        )
-
                         if (track.coverUrl.isNotBlank()) {
                             AsyncImage(
                                 model = track.coverUrl,
                                 contentDescription = track.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(52.dp)
+                                    .size(54.dp)
                                     .clip(RoundedCornerShape(6.dp))
                             )
                         } else {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(52.dp)
+                                    .size(54.dp)
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(SpotifyHighlight)
                             ) {
@@ -412,9 +324,9 @@ fun HomeScreen() {
                             )
                         }
 
-                        IconButton(onClick = { PlayerManager.playTrack(track, popularTracks) }) {
+                        IconButton(onClick = { PlayerManager.playTrack(track, artistMixTracks) }) {
                             Icon(
-                                imageVector = Icons.Default.PlayArrow,
+                                painter = painterResource(R.drawable.ic_spotify_play),
                                 contentDescription = "Play",
                                 tint = SpotifyTextSecondary,
                                 modifier = Modifier.size(24.dp)
@@ -424,6 +336,167 @@ fun HomeScreen() {
                 }
             }
         }
+
+        // Section 3: Stasiun rekomendasi (Radio Artis)
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Stasiun rekomendasi",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(radioStations) { track ->
+                        RadioCard(
+                            track = track,
+                            onClick = { PlayerManager.playTrack(track) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section 4: Tangga Lagu Teratas (Indonesia Top 50)
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Tangga Lagu Teratas",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(topCharts) { track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { PlayerManager.playTrack(track, topCharts) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MixCard(
+    mix: ArtistMix,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = SpotifyElevated,
+        modifier = Modifier
+            .width(152.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Column {
+            // Header colored strip
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .background(mix.headerColor)
+            )
+
+            // Cover Image
+            AsyncImage(
+                model = mix.coverUrl,
+                contentDescription = mix.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+            )
+
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    text = mix.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = SpotifyText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = mix.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SpotifyTextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RadioCard(
+    track: Track,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(148.dp)
+            .clickable(onClick = onClick)
+    ) {
+        // Circular artist image inside card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(SpotifyElevated),
+            contentAlignment = Alignment.Center
+        ) {
+            if (track.coverUrl.isNotBlank()) {
+                AsyncImage(
+                    model = track.coverUrl,
+                    contentDescription = track.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = SpotifyTextSecondary,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Radio ${track.artist}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = SpotifyText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Text(
+            text = "Dengan ${track.artist}, dan lainnya",
+            style = MaterialTheme.typography.bodySmall,
+            color = SpotifyTextSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

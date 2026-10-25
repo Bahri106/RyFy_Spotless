@@ -10,6 +10,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.bahri.ryfy.data.api.MusicApiService
@@ -24,6 +25,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+
+enum class ShuffleMode {
+    OFF,
+    SHUFFLE,
+    SMART_SHUFFLE
+}
 
 object PlayerManager {
     private const val TAG = "PlayerManager"
@@ -44,8 +51,8 @@ object PlayerManager {
     private val _queue = MutableStateFlow<List<Track>>(emptyList())
     val queue: StateFlow<List<Track>> = _queue.asStateFlow()
 
-    private val _isShuffle = MutableStateFlow(false)
-    val isShuffle: StateFlow<Boolean> = _isShuffle.asStateFlow()
+    private val _shuffleMode = MutableStateFlow(ShuffleMode.OFF)
+    val shuffleMode: StateFlow<ShuffleMode> = _shuffleMode.asStateFlow()
 
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
@@ -69,7 +76,7 @@ object PlayerManager {
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.4")
             .setConnectTimeoutMs(20000)
-            .setReadTimeoutMs(30000)
+            .setReadTimeoutMs(35000)
             .setAllowCrossProtocolRedirects(true)
 
         // Cache Data Source saves chunks locally to survive proxy drops
@@ -80,8 +87,20 @@ object PlayerManager {
 
         val mediaSourceFactory = DefaultMediaSourceFactory(cacheDataSourceFactory)
 
+        // Aggressive LoadControl: Buffers entire 3-4 MB track in first few seconds
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                60_000,   // minBufferMs (1 minute)
+                300_000,  // maxBufferMs (5 minutes - buffers full song)
+                1_500,    // bufferForPlaybackMs
+                3_000     // bufferForPlaybackAfterRebufferMs
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
         val player = ExoPlayer.Builder(appContext)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(loadControl)
             .build()
 
         player.addListener(object : Player.Listener {
@@ -200,9 +219,17 @@ object PlayerManager {
     fun playNext() {
         val currentList = _queue.value
         val current = _currentTrack.value ?: return
-        val currentIndex = currentList.indexOfFirst { it.id == current.id }
-        if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
-            playTrack(currentList[currentIndex + 1], currentList)
+        if (currentList.isEmpty()) return
+
+        if (_shuffleMode.value != ShuffleMode.OFF && currentList.size > 1) {
+            val remaining = currentList.filter { it.id != current.id }
+            val nextTrack = remaining.randomOrNull() ?: currentList.first()
+            playTrack(nextTrack, currentList)
+        } else {
+            val currentIndex = currentList.indexOfFirst { it.id == current.id }
+            if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
+                playTrack(currentList[currentIndex + 1], currentList)
+            }
         }
     }
 
@@ -217,8 +244,31 @@ object PlayerManager {
         }
     }
 
-    fun toggleShuffle() {
-        _isShuffle.value = !_isShuffle.value
+    fun cycleShuffleMode() {
+        val next = when (_shuffleMode.value) {
+            ShuffleMode.OFF -> ShuffleMode.SHUFFLE
+            ShuffleMode.SHUFFLE -> ShuffleMode.SMART_SHUFFLE
+            ShuffleMode.SMART_SHUFFLE -> ShuffleMode.OFF
+        }
+        _shuffleMode.value = next
+
+        if (next == ShuffleMode.SMART_SHUFFLE) {
+            val cur = _currentTrack.value ?: return
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val smartTracks = MusicApiService.searchSongs("${cur.artist} rekomendasi")
+                    if (smartTracks.isNotEmpty()) {
+                        val currentList = _queue.value.toMutableList()
+                        smartTracks.forEach { t ->
+                            if (currentList.none { it.id == t.id }) {
+                                currentList.add(t)
+                            }
+                        }
+                        _queue.value = currentList
+                    }
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     fun toggleRepeat() {

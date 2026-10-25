@@ -24,18 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,9 +59,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
+import com.bahri.ryfy.R
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import com.bahri.ryfy.playback.PlayerManager
+import com.bahri.ryfy.playback.ShuffleMode
 import com.bahri.ryfy.ui.theme.SpotifyBlack
 import com.bahri.ryfy.ui.theme.SpotifyDark
 import com.bahri.ryfy.ui.theme.SpotifyElevated
@@ -85,7 +79,7 @@ fun NowPlayingDialog(
     track: Track,
     isPlaying: Boolean,
     progressMs: Long,
-    isShuffle: Boolean,
+    shuffleMode: ShuffleMode,
     repeatMode: Int,
     onDismiss: () -> Unit,
     onTogglePlay: () -> Unit,
@@ -170,7 +164,7 @@ fun NowPlayingDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Big Square Album Art
+                // Big Square Album Art (High Resolution HD)
                 if (track.coverUrl.isNotBlank()) {
                     AsyncImage(
                         model = track.coverUrl,
@@ -234,9 +228,10 @@ fun NowPlayingDialog(
                         )
                     }
 
+                    // Like Button (Official Spotify Heart)
                     IconButton(onClick = { onToggleLike(track) }) {
                         Icon(
-                            imageVector = if (track.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            painter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
                             contentDescription = "Like",
                             tint = if (track.isLiked) SpotifyGreen else SpotifyText,
                             modifier = Modifier.size(28.dp)
@@ -286,27 +281,33 @@ fun NowPlayingDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Controls (Shuffle, Prev, Play/Pause, Next, Repeat)
+                // Controls (Shuffle/Smart Shuffle, Prev, Play/Pause, Next, Repeat)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // 3-State Spotify Shuffle (OFF / Normal Shuffle / Smart Shuffle ✨)
                     IconButton(onClick = onToggleShuffle) {
+                        val isSmart = shuffleMode == ShuffleMode.SMART_SHUFFLE
+                        val isNormal = shuffleMode == ShuffleMode.SHUFFLE
+                        val iconRes = if (isSmart) R.drawable.ic_spotify_smart_shuffle else R.drawable.ic_spotify_shuffle
+                        val tintColor = if (isSmart || isNormal) SpotifyGreen else SpotifyTextSecondary
                         Icon(
-                            imageVector = Icons.Default.Shuffle,
+                            painter = painterResource(iconRes),
                             contentDescription = "Shuffle",
-                            tint = if (isShuffle) SpotifyGreen else SpotifyTextSecondary,
+                            tint = tintColor,
                             modifier = Modifier.size(26.dp)
                         )
                     }
 
+                    // Skip Previous
                     IconButton(onClick = onPrevious) {
                         Icon(
-                            imageVector = Icons.Default.SkipPrevious,
+                            painter = painterResource(R.drawable.ic_spotify_skip_prev),
                             contentDescription = "Previous",
                             tint = SpotifyText,
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(36.dp)
                         )
                     }
 
@@ -320,27 +321,30 @@ fun NowPlayingDialog(
                             .clickable(onClick = onTogglePlay)
                     ) {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            painter = painterResource(if (isPlaying) R.drawable.ic_spotify_pause else R.drawable.ic_spotify_play),
                             contentDescription = if (isPlaying) "Pause" else "Play",
                             tint = SpotifyDark,
+                            modifier = Modifier.size(34.dp)
+                        )
+                    }
+
+                    // Skip Next
+                    IconButton(onClick = onNext) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_spotify_skip_next),
+                            contentDescription = "Next",
+                            tint = SpotifyText,
                             modifier = Modifier.size(36.dp)
                         )
                     }
 
-                    IconButton(onClick = onNext) {
-                        Icon(
-                            imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next",
-                            tint = SpotifyText,
-                            modifier = Modifier.size(38.dp)
-                        )
-                    }
-
+                    // Repeat / Repeat One
                     IconButton(onClick = onToggleRepeat) {
-                        val icon = if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat
+                        val isRepeatOne = repeatMode == Player.REPEAT_MODE_ONE
                         val active = repeatMode != Player.REPEAT_MODE_OFF
+                        val iconRes = if (isRepeatOne) R.drawable.ic_spotify_repeat_once else R.drawable.ic_spotify_repeat
                         Icon(
-                            imageVector = icon,
+                            painter = painterResource(iconRes),
                             contentDescription = "Repeat",
                             tint = if (active) SpotifyGreen else SpotifyTextSecondary,
                             modifier = Modifier.size(26.dp)

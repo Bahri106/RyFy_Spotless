@@ -13,11 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -29,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.bahri.ryfy.R
 import com.bahri.ryfy.model.Track
 import com.bahri.ryfy.ui.theme.SpotifyElevated
 import com.bahri.ryfy.ui.theme.SpotifyGreen
@@ -58,7 +56,7 @@ fun MiniPlayer(
     Surface(
         shape = RoundedCornerShape(8.dp),
         color = SpotifyElevated,
-        shadowElevation = 8.dp,
+        shadowElevation = 10.dp,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -98,14 +96,14 @@ fun MiniPlayer(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 // Track Title & Artist
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = track.title,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         color = SpotifyText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -119,28 +117,49 @@ fun MiniPlayer(
                     )
                 }
 
-                // Like Button
+                // Spotify Connect Speaker / Device indicator (1:1 with Screenshot)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_spotify_device),
+                        contentDescription = "Device",
+                        tint = SpotifyGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "MD",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SpotifyGreen,
+                        fontSize = 10.sp
+                    )
+                }
+
+                // Like Button (Official Spotify Heart)
                 IconButton(onClick = { onToggleLike(track) }, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        imageVector = if (track.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        painter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
                         contentDescription = "Like",
                         tint = if (track.isLiked) SpotifyGreen else SpotifyTextSecondary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
 
-                // Play / Pause Button
+                // Play / Pause Button (Official Spotify Vector)
                 IconButton(onClick = onTogglePlay, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        painter = painterResource(if (isPlaying) R.drawable.ic_spotify_pause else R.drawable.ic_spotify_play),
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = SpotifyText,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
 
-            // Bottom Progress Bar Line
+            // Bottom Progress Bar Line (2.5dp Spotify Green)
             LinearProgressIndicator(
                 progress = { progress },
                 color = SpotifyGreen,
