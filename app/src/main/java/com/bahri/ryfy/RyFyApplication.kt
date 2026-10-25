@@ -3,6 +3,7 @@ package com.bahri.ryfy
 import android.app.Application
 import com.bahri.ryfy.core.AppIconManager
 import com.bahri.ryfy.data.FavoritesManager
+import com.bahri.ryfy.data.PlaylistManager
 import com.bahri.ryfy.playback.PlayerManager
 
 class RyFyApplication : Application() {
