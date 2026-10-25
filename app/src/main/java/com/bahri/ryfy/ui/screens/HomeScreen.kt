@@ -204,6 +204,16 @@ fun HomeScreen() {
         }
     }
 
+    // Preload stream URLs for top tracks in background so clicking is 0ms instant
+    LaunchedEffect(artistMixTracks) {
+        artistMixTracks.take(4).forEach { t ->
+            val vid = t.videoId ?: t.id
+            if (vid.isNotBlank()) {
+                PlayerManager.preloadTrack(vid)
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 16.dp, bottom = 140.dp),

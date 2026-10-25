@@ -74,6 +74,18 @@ object PlayerManager {
 
     fun getSession(): MediaSession? = mediaSession
 
+    fun preloadTrack(videoId: String) {
+        if (videoId.isBlank() || streamUrlCache.containsKey(videoId)) return
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                val url = MusicApiService.resolveStreamUrl(videoId)
+                if (!url.isNullOrBlank()) {
+                    streamUrlCache[videoId] = url
+                }
+            }
+        }
+    }
+
     @Synchronized
     private fun getCache(context: Context): SimpleCache {
         return simpleCache ?: run {

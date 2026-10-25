@@ -21,10 +21,8 @@ object MusicApiService {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val INVIDIOUS_INSTANCES = listOf(
-        "https://yewtu.be",
-        "https://yt.chocolatemoo53.com"
-    )
+    private val DEDICATED_STREAM_HOST = "https://bahrixyz.my.id/api/stream"
+    private val FALLBACK_STREAM_HOST = "https://yt.chocolatemoo53.com/latest_version"
 
     fun upgradeThumbnail(url: String): String {
         if (url.isBlank()) return url
@@ -244,25 +242,20 @@ object MusicApiService {
     }
 
     /**
-     * Resolves playable audio stream URL instantly (0 ms latency).
-     * Bypasses slow blocking HTTP pre-checks and feeds high-speed proxy directly to ExoPlayer.
+     * Resolves playable audio stream URL instantly via dedicated high-speed server.
+     * Direct 1 Gbps pipe, zero captcha, byte-range 206 supported.
      */
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
         if (videoId.isBlank()) return@withContext null
-        val primary = INVIDIOUS_INSTANCES.firstOrNull() ?: "https://yewtu.be"
-        "$primary/latest_version?id=$videoId&itag=140&local=true"
+        "$DEDICATED_STREAM_HOST?id=$videoId"
     }
 
     /**
-     * Fallback stream resolver if the primary instance fails or drops.
+     * Fallback stream resolver if the primary dedicated host is unreachable.
      */
     suspend fun resolveFallbackStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
         if (videoId.isBlank()) return@withContext null
-        if (INVIDIOUS_INSTANCES.size > 1) {
-            val fallback = INVIDIOUS_INSTANCES[1]
-            return@withContext "$fallback/latest_version?id=$videoId&itag=140&local=true"
-        }
-        null
+        "$FALLBACK_STREAM_HOST?id=$videoId&itag=140&local=true"
     }
 
     /**
