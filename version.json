@@ -1,12 +1,13 @@
 {
-  "versionName": "1.0.6",
-  "versionCode": 7,
-  "publishedAt": "2026-10-25T09:55:00Z",
+  "versionName": "1.0.7",
+  "versionCode": 8,
+  "publishedAt": "2026-10-25T10:15:00Z",
   "changelog": [
-    "Fix Next Song Transition: Otomatis stop lagu lama, reset posisi, dan langsung play lagu berikutnya tanpa stuck di 00:00",
-    "Universal Innertube Parser: Deteksi musicCardShelfRenderer & itemSectionRenderer (lagu game/anime/OST seperti Monster Siren 100% playable)",
-    "Auto-Skip on Fail: Jika resolusi stream gagal, pemutar otomatis lompat ke lagu berikutnya tanpa macet di antrean",
-    "Pencegahan Race Condition: Cancel pending coroutine resolusi lagu lama saat tombol Next ditekan berulang"
+    "Logo Baru Aplikasi: Ikon circular neon green 'R' nada musik & sinyal radio",
+    "FAB Custom Icon App (1:1 Rolleys): Tombol floating action button di Pengaturan untuk ganti ikon launcher secara dinamis",
+    "Riwayat Pencarian (Search History): Tampil 1:1 seperti Spotify saat input kosong, lengkap dengan hapus per item & hapus semua",
+    "Tentang Pengembang & Aplikasi: Profil Pemilik Saiful Bahri (@Gus_tazdo / GitHub Bahri106), Co-Founder Diki Dev (Towartz), dan channel t.me/ryfyProject",
+    "Info Transparan: Adaptasi kloningan Spotify 1:1, 100% bebas iklan, on-demand tanpa batas, zero-login anti-banned"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.6/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.7/app-release.apk"
 }

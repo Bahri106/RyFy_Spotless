@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,11 +46,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.bahri.ryfy.data.SearchHistoryEntry
+import com.bahri.ryfy.data.SearchHistoryManager
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.GenreCategory
 import com.bahri.ryfy.model.Track
@@ -77,17 +82,24 @@ val GENRE_CATEGORIES = listOf(
 
 @Composable
 fun SearchScreen() {
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<Track>>(emptyList()) }
     var isSearching by remember { mutableStateOf(false) }
 
+    var historyEntries by remember { mutableStateOf(SearchHistoryManager.getHistory(context)) }
+
     LaunchedEffect(searchQuery) {
         if (searchQuery.trim().length >= 2) {
             isSearching = true
-            delay(500) // Debounce typing
+            delay(400) // Debounce typing
             val results = MusicApiService.searchSongs(searchQuery.trim())
             searchResults = results
             isSearching = false
+            if (results.isNotEmpty()) {
+                SearchHistoryManager.addQuery(context, searchQuery.trim())
+                historyEntries = SearchHistoryManager.getHistory(context)
+            }
         } else {
             searchResults = emptyList()
             isSearching = false
@@ -159,6 +171,7 @@ fun SearchScreen() {
                         onClick = {
                             searchQuery = ""
                             searchResults = emptyList()
+                            historyEntries = SearchHistoryManager.getHistory(context)
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -193,32 +206,216 @@ fun SearchScreen() {
                     SearchResultRow(
                         track = track,
                         onClick = {
+                            SearchHistoryManager.addTrack(context, track)
+                            historyEntries = SearchHistoryManager.getHistory(context)
                             PlayerManager.playTrack(track)
                         }
                     )
                 }
             }
         } else {
-            // Genre Cards Grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+            // Screen with Search History (if available) + Explore Genres
+            LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item(span = { GridItemSpan(2) }) {
+                // 1. Search History Section (1:1 Spotify)
+                if (historyEntries.isNotEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Pencarian Terbaru",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = SpotifyText
+                            )
+                            Text(
+                                text = "Hapus semua",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SpotifyTextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable {
+                                        SearchHistoryManager.clearAll(context)
+                                        historyEntries = emptyList()
+                                    }
+                                    .padding(4.dp)
+                            )
+                        }
+                    }
+
+                    items(historyEntries) { entry ->
+                        when (entry) {
+                            is SearchHistoryEntry.TrackItem -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable {
+                                            SearchHistoryManager.addTrack(context, entry.track)
+                                            PlayerManager.playTrack(entry.track)
+                                        }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    if (entry.track.coverUrl.isNotBlank()) {
+                                        AsyncImage(
+                                            model = entry.track.coverUrl,
+                                            contentDescription = entry.track.title,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(46.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                        )
+                                    } else {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .size(46.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(SpotifyHighlight)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MusicNote,
+                                                contentDescription = null,
+                                                tint = SpotifyTextSecondary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = entry.track.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = SpotifyText,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "Lagu • ${entry.track.artist}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = SpotifyTextSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            SearchHistoryManager.removeEntry(context, entry.id)
+                                            historyEntries = SearchHistoryManager.getHistory(context)
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Hapus",
+                                            tint = SpotifyTextSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            is SearchHistoryEntry.QueryItem -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable {
+                                            searchQuery = entry.query
+                                        }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .size(46.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(SpotifyHighlight)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.History,
+                                            contentDescription = null,
+                                            tint = SpotifyTextSecondary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = entry.query,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = SpotifyText,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "Pencarian",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = SpotifyTextSecondary
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            SearchHistoryManager.removeEntry(context, entry.id)
+                                            historyEntries = SearchHistoryManager.getHistory(context)
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Hapus",
+                                            tint = SpotifyTextSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. Genre Cards Grid Header
+                item {
                     Text(
                         text = "Jelajahi Semua",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = SpotifyText,
-                        modifier = Modifier.padding(bottom = 6.dp)
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
 
-                items(GENRE_CATEGORIES) { genre ->
-                    GenreCard(genre = genre, onSelect = { searchQuery = genre.name })
+                // 2 columns grid rows for Genres
+                items(GENRE_CATEGORIES.chunked(2)) { pair ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        for (genre in pair) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                GenreCard(genre = genre, onSelect = { searchQuery = genre.name })
+                            }
+                        }
+                        if (pair.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
