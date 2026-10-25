@@ -4,25 +4,7 @@
 -keep class com.bahri.ryfy.model.** { *; }
 -keep class com.bahri.ryfy.update.** { *; }
 
-# Media3 & ExoPlayer
--keep class androidx.media3.** { *; }
+# Keep Media3 Cache & Data Source
+-keep class androidx.media3.datasource.cache.** { *; }
+-keep class androidx.media3.database.** { *; }
 -dontwarn androidx.media3.**
-
-# OkHttp & Okio
--keepattributes Signature
--keepattributes *Annotation*
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn javax.annotation.**
-
-# Kotlin Coroutines
--keepclassmembers class kotlinx.coroutines.** { *; }
--dontwarn kotlinx.coroutines.**
-
-# Coil Image Loader
--keep class coil.** { *; }
--dontwarn coil.**
-
-# Compose rules
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
