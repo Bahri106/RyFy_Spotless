@@ -208,7 +208,7 @@ fun SearchScreen() {
                         onClick = {
                             SearchHistoryManager.addTrack(context, track)
                             historyEntries = SearchHistoryManager.getHistory(context)
-                            PlayerManager.playTrack(track)
+                            PlayerManager.playTrack(track, searchResults)
                         }
                     )
                 }
@@ -260,7 +260,7 @@ fun SearchScreen() {
                                         .clip(RoundedCornerShape(6.dp))
                                         .clickable {
                                             SearchHistoryManager.addTrack(context, entry.track)
-                                            PlayerManager.playTrack(entry.track)
+                                            PlayerManager.playTrack(entry.track, listOf(entry.track))
                                         }
                                         .padding(vertical = 4.dp)
                                 ) {

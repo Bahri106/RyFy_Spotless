@@ -1,13 +1,13 @@
 {
-  "versionName": "1.0.13",
-  "versionCode": 14,
-  "publishedAt": "2026-10-25T15:10:00Z",
+  "versionName": "1.0.14",
+  "versionCode": 15,
+  "publishedAt": "2026-10-25T15:45:00Z",
   "changelog": [
-    "Fix Bug Durasi 03:30: Sinkronisasi durasi lagu nyata dari ExoPlayer secara real-time, tidak lagi mentok di 3 menit 30 detik",
-    "Seksi 'Baru saja diputar' di Beranda: Riwayat lagu yang baru saja Anda dengarkan otomatis muncul dan ter-refresh di baris teratas Beranda (Spotify 1:1)",
-    "Tentang RyFy Jadi Popup Dialog: Menu Pengaturan jauh lebih ringkas, membuka dialog popup berikon rapi dan lengkap",
-    "Tim Pengembang VIP BottomSheet (Opsi 1): Profil modern Saiful Bahri (Founder) dan Diki Dev (Co-Founder) dengan tombol aksi Telegram & GitHub",
-    "Custom Ikon Aplikasi dari Galeri: Bebas memilih foto apa pun dari galeri HP Anda untuk dijadikan ikon RyFy di Layar Utama"
+    "Fix Bug Antrean Mental Genre: Lagu rock lanjut rock/relevan, pencarian dan artis radio terisolasi ketat tanpa campur genre lain",
+    "Pratinjau Lirik Nyata di Bawah Player: Sinkronisasi lirik LRCLIB aktif di setiap lagu dengan bait teks bersih bebas timestamp",
+    "Layar Penuh Lirik (Fullscreen Lyrics 1:1 Spotify): Ketuk BUKA PENUH untuk membaca lirik bergulir dengan tipografi besar dan jelas",
+    "Bahasa Aplikasi Multibahasa (1:1 Rolleys): Dukungan bahasa Indonesia, English, Español, 日本語, 中文, dll di menu Pengaturan",
+    "Single Dex & Keystore Pinned: Tepat 1 file classes.dex dan ukuran ramping ~4.2 MB"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.13/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.14/app-release.apk"
 }

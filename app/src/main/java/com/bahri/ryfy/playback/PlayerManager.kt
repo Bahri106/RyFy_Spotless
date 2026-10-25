@@ -230,27 +230,28 @@ object PlayerManager {
         _isPlaying.value = false
         _currentTrack.value = track
         com.bahri.ryfy.data.RecentlyPlayedManager.addTrack(track)
+        fetchLyricsForTrack(track)
 
-        // 3. Manage Queue
-        if (newQueue != null && newQueue.isNotEmpty()) {
+        // 3. Manage Queue (Strict Genre / Artist Isolation)
+        if (newQueue != null && newQueue.size > 1) {
             _queue.value = newQueue
         } else {
-            val existsInQueue = _queue.value.any {
-                it.id == track.id || (it.title.equals(track.title, true) && it.artist.equals(track.artist, true))
-            }
-            if (!existsInQueue) {
-                _queue.value = listOf(track)
-                // Auto artist radio: fetch more works from the same artist so next tracks are always available
-                scope.launch(Dispatchers.IO) {
-                    try {
-                        val artistTracks = MusicApiService.searchSongs(track.artist)
-                            .filter { !it.title.equals(track.title, true) }
-                        if (artistTracks.isNotEmpty()) {
-                            _queue.value = listOf(track) + artistTracks
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Artist radio queue error: ${e.message}")
+            // Unrelated queue wiped out, replaced by dedicated Artist Radio queue
+            _queue.value = listOf(track)
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val query = if (track.artist.isNotBlank() && track.artist != "Artis") {
+                        track.artist
+                    } else {
+                        track.title
                     }
+                    val related = MusicApiService.searchSongs(query)
+                        .filter { !it.title.equals(track.title, true) }
+                    if (related.isNotEmpty()) {
+                        _queue.value = listOf(track) + related
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Artist radio queue error: ${e.message}")
                 }
             }
         }
@@ -304,18 +305,6 @@ object PlayerManager {
                         _isPlaying.value = true
                         updateSystemNotification()
                         prefetchNextTrack()
-
-                        // Asynchronous non-blocking background lyrics retrieval
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
-                                if (!lyrics.isNullOrBlank() && _currentTrack.value?.id == updated.id) {
-                                    _currentTrack.value = _currentTrack.value?.copy(lyrics = lyrics)
-                                }
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Background lyrics fetch failed: ${e.message}")
-                            }
-                        }
                     } else {
                         Log.w(TAG, "Failed to resolve stream for videoId $targetVideoId, auto-skipping to next")
                         playNext()
@@ -324,6 +313,19 @@ object PlayerManager {
                     Log.w(TAG, "No videoId found for track ${track.title}, auto-skipping to next")
                     playNext()
                 }
+            }
+        }
+    }
+
+    private fun fetchLyricsForTrack(track: Track) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
+                if (!lyrics.isNullOrBlank() && _currentTrack.value?.title.equals(track.title, true)) {
+                    _currentTrack.value = _currentTrack.value?.copy(lyrics = lyrics)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Lyrics fetch error: ${e.message}")
             }
         }
     }

@@ -299,7 +299,7 @@ fun HomeScreen() {
                                 modifier = Modifier
                                     .width(130.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable { PlayerManager.playTrack(track, recentTracks) }
+                                    .clickable { PlayerManager.playTrack(track, listOf(track)) }
                             ) {
                                 AsyncImage(
                                     model = track.coverUrl,

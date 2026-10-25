@@ -118,6 +118,7 @@ fun NowPlayingDialog(
     var showQueueSheet by remember { mutableStateOf(false) }
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+    var showFullscreenLyrics by remember { mutableStateOf(false) }
 
     val queueList by PlayerManager.queue.collectAsState()
     val playlists by PlaylistManager.playlists.collectAsState()
@@ -384,12 +385,21 @@ fun NowPlayingDialog(
                 Spacer(modifier = Modifier.height(28.dp))
 
                 // Lyrics Preview Box (Spotify Style)
+                val cleanLyrics = cleanLyricsText(track.lyrics)
+                val previewLines = if (cleanLyrics.isNotBlank()) {
+                    cleanLyrics.lines().take(4).joinToString("\n")
+                } else {
+                    "Lirik sedang disinkronkan dari LRCLIB..."
+                }
+
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = SpotifyElevated,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showFullscreenLyrics = true }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -403,20 +413,28 @@ fun NowPlayingDialog(
                                 fontWeight = FontWeight.Bold,
                                 color = SpotifyGreen
                             )
-                            Text(
-                                text = "BUKA PENUH",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = SpotifyTextSecondary
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF282828))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "BUKA PENUH",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpotifyText
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = if (!track.lyrics.isNullOrBlank()) track.lyrics!! else "Nikmati audio berkualitas tinggi 100% bebas iklan di RyFy Spotless.",
+                            text = previewLines,
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 22.sp,
-                            color = SpotifyText
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 24.sp,
+                            color = if (cleanLyrics.isNotBlank()) SpotifyText else SpotifyTextSecondary
                         )
                     }
                 }
@@ -1006,8 +1024,102 @@ fun NowPlayingDialog(
                     }
                 }
             }
+
+            // 5. Fullscreen Synchronized Lyrics ModalBottomSheet (Spotify 1:1)
+            if (showFullscreenLyrics) {
+                val lyricsSheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ModalBottomSheet(
+                    onDismissRequest = { showFullscreenLyrics = false },
+                    sheetState = lyricsSheet,
+                    containerColor = Color(0xFF141414),
+                    contentColor = SpotifyText
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 36.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = track.title,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpotifyText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = track.artist,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = SpotifyGreen,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            IconButton(onClick = { showFullscreenLyrics = false }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Tutup",
+                                    tint = SpotifyTextSecondary
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(
+                            color = SpotifyHighlight,
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+
+                        val fullLyrics = cleanLyricsText(track.lyrics)
+                        if (fullLyrics.isBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Lirik untuk lagu ini belum tersedia di database LRCLIB.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = SpotifyTextSecondary
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(vertical = 16.dp)
+                            ) {
+                                items(fullLyrics.lines()) { line ->
+                                    Text(
+                                        text = line,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        lineHeight = 32.sp,
+                                        color = SpotifyText
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+private fun cleanLyricsText(raw: String?): String {
+    if (raw.isNullOrBlank()) return ""
+    return raw.lines()
+        .map { it.replace(Regex("\\[\\d+:\\d+(\\.\\d+)?\\]"), "").trim() }
+        .filter { it.isNotBlank() }
+        .joinToString("\n")
 }
 
 @Composable

@@ -65,6 +65,10 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var updateManager: UpdateManager
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.bahri.ryfy.core.AppLanguageManager.wrapContext(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         updateManager = UpdateManager(this)

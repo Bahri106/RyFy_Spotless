@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -54,9 +55,11 @@ import androidx.compose.ui.unit.dp
 import com.bahri.ryfy.BuildConfig
 import com.bahri.ryfy.R
 import com.bahri.ryfy.core.AppIconManager
+import com.bahri.ryfy.core.AppLanguageManager
 import com.bahri.ryfy.ui.dialogs.AboutRyFyDialog
 import com.bahri.ryfy.ui.dialogs.AppIconDialog
 import com.bahri.ryfy.ui.dialogs.DeveloperBottomSheet
+import com.bahri.ryfy.ui.dialogs.LanguageSelectionDialog
 import com.bahri.ryfy.ui.theme.SpotifyElevated
 import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
@@ -74,6 +77,10 @@ fun SettingsScreen(updateManager: UpdateManager) {
     var showAppIconDialog by remember { mutableStateOf(false) }
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    val currentLangCode by AppLanguageManager.currentLanguage.collectAsState()
+    val currentLangLabel = AppLanguageManager.supportedLanguages.firstOrNull { it.code.equals(currentLangCode, true) }?.nativeName ?: "Default Sistem"
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -169,6 +176,15 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
                         HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
 
+                        SettingsItemRow(
+                            icon = Icons.Default.Language,
+                            title = "Bahasa Aplikasi / App Language",
+                            subtitle = currentLangLabel,
+                            onClick = { showLanguageDialog = true }
+                        )
+
+                        HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+
                         // OTA In-App Update Feature
                         val updateSubtitle = when (updateState) {
                             is UpdateState.Checking -> "Sedang memeriksa pembaruan..."
@@ -241,6 +257,14 @@ fun SettingsScreen(updateManager: UpdateManager) {
                 showAppIconDialog = false
                 Toast.makeText(context, "Ikon berhasil diubah ke ${icon.label}", Toast.LENGTH_SHORT).show()
             }
+        )
+    }
+
+    // Language Selection Dialog
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            currentLanguageCode = currentLangCode,
+            onDismiss = { showLanguageDialog = false }
         )
     }
 
