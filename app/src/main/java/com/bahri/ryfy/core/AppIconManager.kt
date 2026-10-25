@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class AppLauncherIcon(val alias: String, val label: String, val preview: Int) {
-    NEON("LauncherNeon", "RyFy Neon", R.mipmap.ic_launcher),
+    NEON("MainActivity", "RyFy Neon", R.mipmap.ic_launcher),
     SPOTIFY("LauncherSpotify", "Spotify Classic", R.mipmap.ic_launcher_spotify),
     MONO("LauncherMono", "RyFy Mono", R.mipmap.ic_launcher_mono)
 }

@@ -1,13 +1,13 @@
 {
-  "versionName": "1.0.7",
-  "versionCode": 8,
-  "publishedAt": "2026-10-25T10:15:00Z",
+  "versionName": "1.0.8",
+  "versionCode": 9,
+  "publishedAt": "2026-10-25T10:45:00Z",
   "changelog": [
-    "Logo Baru Aplikasi: Ikon circular neon green 'R' nada musik & sinyal radio",
+    "Fix Kompatibilitas Android 11: Pulihkan MainActivity sebagai primary launcher activity agar PackageInstaller Android 11 tidak gagal memverifikasi launcher",
+    "Logo Baru Aplikasi: Ikon circular neon green 'R' nada musik & sinyal radio broadcast",
     "FAB Custom Icon App (1:1 Rolleys): Tombol floating action button di Pengaturan untuk ganti ikon launcher secara dinamis",
     "Riwayat Pencarian (Search History): Tampil 1:1 seperti Spotify saat input kosong, lengkap dengan hapus per item & hapus semua",
-    "Tentang Pengembang & Aplikasi: Profil Pemilik Saiful Bahri (@Gus_tazdo / GitHub Bahri106), Co-Founder Diki Dev (Towartz), dan channel t.me/ryfyProject",
-    "Info Transparan: Adaptasi kloningan Spotify 1:1, 100% bebas iklan, on-demand tanpa batas, zero-login anti-banned"
+    "Tentang Pengembang & Aplikasi: Profil Pemilik Saiful Bahri (@Gus_tazdo / GitHub Bahri106), Co-Founder Diki Dev (Towartz), dan channel t.me/ryfyProject"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.7/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.8/app-release.apk"
 }
