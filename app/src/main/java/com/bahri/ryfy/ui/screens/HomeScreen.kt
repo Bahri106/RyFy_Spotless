@@ -21,9 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -166,27 +164,44 @@ fun HomeScreen() {
     }
 
     var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filters = listOf("Semua", "Musik", "Podcast")
+    val filters = listOf("Semua", "Pop", "Indie", "Rock", "Akustik", "K-Pop", "Chill")
 
     var artistMixTracks by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
     var topCharts by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
     var radioStations by remember { mutableStateOf(INITIAL_RECOMMENDED_TRACKS) }
+    var isAutofetching by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        try {
-            val hits = MusicApiService.searchSongs("Raim Laode Nadin Amizah Bernadya")
-            if (hits.isNotEmpty()) {
-                artistMixTracks = hits
-            }
-            val charts = MusicApiService.searchSongs("Top Hits Indonesia 2026")
-            if (charts.isNotEmpty()) {
-                topCharts = charts
-            }
-            val radio = MusicApiService.searchSongs("Radio Artis Populer Indonesia")
-            if (radio.isNotEmpty()) {
-                radioStations = radio
-            }
-        } catch (_: Exception) {}
+    LaunchedEffect(selectedFilterIndex) {
+        val genre = filters[selectedFilterIndex]
+        if (genre == "Semua") {
+            try {
+                val hits = MusicApiService.searchSongs("Raim Laode Nadin Amizah Bernadya")
+                if (hits.isNotEmpty()) artistMixTracks = hits
+                val charts = MusicApiService.searchSongs("Top Hits Indonesia 2026")
+                if (charts.isNotEmpty()) topCharts = charts
+                val radio = MusicApiService.searchSongs("Radio Artis Populer Indonesia")
+                if (radio.isNotEmpty()) radioStations = radio
+            } catch (_: Exception) {}
+        } else {
+            isAutofetching = true
+            try {
+                val query = when (genre) {
+                    "Pop" -> "Lagu Pop Indonesia Terpopuler 2026"
+                    "Indie" -> "Lagu Indie Indonesia Paling Populer"
+                    "Rock" -> "Lagu Rock Indonesia Terbaik"
+                    "Akustik" -> "Lagu Akustik Santai Indonesia"
+                    "K-Pop" -> "K-Pop Top Hits 2026"
+                    "Chill" -> "Chill Relaxing Lo-Fi Music"
+                    else -> "$genre Hits"
+                }
+                val results = MusicApiService.searchSongs(query)
+                if (results.isNotEmpty()) {
+                    artistMixTracks = results.take(6)
+                    topCharts = results.drop(6).ifEmpty { results }
+                }
+            } catch (_: Exception) {}
+            isAutofetching = false
+        }
     }
 
     LazyColumn(
@@ -194,7 +209,7 @@ fun HomeScreen() {
         contentPadding = PaddingValues(top = 16.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Greeting Header (Time-based only)
+        // Greeting Header
         item {
             Column(
                 modifier = Modifier
@@ -202,19 +217,33 @@ fun HomeScreen() {
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = greeting,
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = SpotifyText
-                )
-
-                // Spotify Filter Chips Row
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = greeting,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = SpotifyText
+                    )
+                    if (isAutofetching) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = SpotifyGreen,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+
+                // Scrollable Genre Filter Chips Row (Autofetch 1:1 Spotify)
+                LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    filters.forEachIndexed { index, filterName ->
+                    items(filters.size) { index ->
+                        val filterName = filters[index]
                         val isSelected = selectedFilterIndex == index
                         Box(
                             modifier = Modifier
@@ -256,7 +285,7 @@ fun HomeScreen() {
             }
         }
 
-        // Section 2: "Raim Laode, Bernadya, Nadin Amizah, dan lainnya" (1:1 with Screenshot)
+        // Section 2: Recommended Tracks List
         item {
             Column(
                 modifier = Modifier
@@ -264,8 +293,14 @@ fun HomeScreen() {
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val currentCategoryTitle = if (filters[selectedFilterIndex] == "Semua") {
+                    "Raim Laode, Bernadya, Nadin Amizah, dan lainnya"
+                } else {
+                    "Pilihan Terbaik ${filters[selectedFilterIndex]}"
+                }
+
                 Text(
-                    text = "Raim Laode, Bernadya, Nadin Amizah, dan lainnya",
+                    text = currentCategoryTitle,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = SpotifyText
@@ -402,7 +437,6 @@ private fun MixCard(
             .clickable(onClick = onClick)
     ) {
         Column {
-            // Header colored strip
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -410,7 +444,6 @@ private fun MixCard(
                     .background(mix.headerColor)
             )
 
-            // Cover Image
             AsyncImage(
                 model = mix.coverUrl,
                 contentDescription = mix.title,
@@ -453,7 +486,6 @@ private fun RadioCard(
             .width(148.dp)
             .clickable(onClick = onClick)
     ) {
-        // Circular artist image inside card
         Box(
             modifier = Modifier
                 .fillMaxWidth()

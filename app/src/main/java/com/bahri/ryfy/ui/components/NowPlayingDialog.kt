@@ -1,5 +1,7 @@
 package com.bahri.ryfy.ui.components
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,22 +26,34 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +63,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +76,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import com.bahri.ryfy.R
+import com.bahri.ryfy.data.PlaylistManager
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import com.bahri.ryfy.playback.PlayerManager
@@ -90,9 +107,18 @@ fun NowPlayingDialog(
     onToggleRepeat: () -> Unit,
     onToggleLike: (Track) -> Unit
 ) {
+    val context = LocalContext.current
     var isDraggingSlider by remember { mutableStateOf(false) }
     var dragPositionMs by remember { mutableFloatStateOf(0f) }
+
     var showArtistSheet by remember { mutableStateOf(false) }
+    var showMoreOptions by remember { mutableStateOf(false) }
+    var showQueueSheet by remember { mutableStateOf(false) }
+    var showAddToPlaylistDialog by remember { mutableStateOf(false) }
+    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+
+    val queueList by PlayerManager.queue.collectAsState()
+    val playlists by PlaylistManager.playlists.collectAsState()
 
     val currentSliderPosition = if (isDraggingSlider) {
         dragPositionMs
@@ -153,7 +179,8 @@ fun NowPlayingDialog(
                         )
                     }
 
-                    IconButton(onClick = { /* Menu */ }) {
+                    // 3-dots More Menu
+                    IconButton(onClick = { showMoreOptions = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Menu",
@@ -287,7 +314,7 @@ fun NowPlayingDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // 3-State Spotify Shuffle (OFF / Normal Shuffle / Smart Shuffle ✨)
+                    // 3-State Spotify Shuffle
                     IconButton(onClick = onToggleShuffle) {
                         val isSmart = shuffleMode == ShuffleMode.SMART_SHUFFLE
                         val isNormal = shuffleMode == ShuffleMode.SHUFFLE
@@ -393,7 +420,468 @@ fun NowPlayingDialog(
                 }
             }
 
-            // Artist Discography BottomSheet
+            // 1. More Options BottomSheet (3-Dots Menu)
+            if (showMoreOptions) {
+                val moreOptionsSheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ModalBottomSheet(
+                    onDismissRequest = { showMoreOptions = false },
+                    sheetState = moreOptionsSheet,
+                    containerColor = SpotifyElevated,
+                    contentColor = SpotifyText
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Header Preview
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        ) {
+                            if (track.coverUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = track.coverUrl,
+                                    contentDescription = track.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = track.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpotifyText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = track.artist,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SpotifyTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(bottom = 8.dp))
+
+                        // Option 1: Suka / Tidak Suka
+                        MoreOptionItem(
+                            iconPainter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
+                            title = if (track.isLiked) "Hapus dari Lagu yang Disukai" else "Sukai Lagu Ini",
+                            iconTint = if (track.isLiked) SpotifyGreen else SpotifyText,
+                            onClick = {
+                                onToggleLike(track)
+                                showMoreOptions = false
+                            }
+                        )
+
+                        // Option 2: Tambahkan ke Playlist
+                        MoreOptionItem(
+                            iconVector = Icons.Default.PlaylistAdd,
+                            title = "Tambahkan ke Playlist",
+                            onClick = {
+                                showMoreOptions = false
+                                showAddToPlaylistDialog = true
+                            }
+                        )
+
+                        // Option 3: Antrean Pemutaran
+                        MoreOptionItem(
+                            iconVector = Icons.Default.QueueMusic,
+                            title = "Buka Antrean Pemutaran",
+                            onClick = {
+                                showMoreOptions = false
+                                showQueueSheet = true
+                            }
+                        )
+
+                        // Option 4: Karya Artis
+                        MoreOptionItem(
+                            iconVector = Icons.Default.Person,
+                            title = "Karya Lain dari ${track.artist}",
+                            onClick = {
+                                showMoreOptions = false
+                                showArtistSheet = true
+                            }
+                        )
+
+                        // Option 5: Bagikan
+                        MoreOptionItem(
+                            iconVector = Icons.Default.Share,
+                            title = "Bagikan Lagu",
+                            onClick = {
+                                showMoreOptions = false
+                                val shareText = "Mendengarkan '${track.title}' oleh ${track.artist} di RyFy Spotless (Bebas Iklan): https://t.me/ryfyProject"
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, track.title)
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Bagikan lewat"))
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 2. Queue List BottomSheet (Antrean Lagu)
+            if (showQueueSheet) {
+                val queueSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ModalBottomSheet(
+                    onDismissRequest = { showQueueSheet = false },
+                    sheetState = queueSheetState,
+                    containerColor = SpotifyElevated,
+                    contentColor = SpotifyText
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 32.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Antrean Pemutaran",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = SpotifyText
+                            )
+                            Text(
+                                text = "Kosongkan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SpotifyTextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable {
+                                        PlayerManager.clearQueueExceptCurrent()
+                                    }
+                                    .padding(4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Sedang Memutar",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyGreen,
+                            letterSpacing = 1.sp
+                        )
+
+                        // Currently Playing Row
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            if (track.coverUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = track.coverUrl,
+                                    contentDescription = track.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = track.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpotifyGreen,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = track.artist,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SpotifyTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 8.dp))
+
+                        Text(
+                            text = "Berikutnya dalam Antrean",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyTextSecondary,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        val nextTracks = queueList.filter { it.id != track.id }
+                        if (nextTracks.isEmpty()) {
+                            Text(
+                                text = "Tidak ada lagu lain dalam antrean. Lagu rekomendasi artis akan diputar otomatis.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SpotifyTextSecondary,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(nextTracks) { qTrack ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                PlayerManager.playTrack(qTrack)
+                                            }
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        if (qTrack.coverUrl.isNotBlank()) {
+                                            AsyncImage(
+                                                model = qTrack.coverUrl,
+                                                contentDescription = qTrack.title,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(44.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = qTrack.title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = SpotifyText,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = qTrack.artist,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = SpotifyTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        IconButton(onClick = { PlayerManager.removeFromQueue(qTrack.id) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Hapus",
+                                                tint = SpotifyTextSecondary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Add to Playlist Dialog
+            if (showAddToPlaylistDialog) {
+                AlertDialog(
+                    onDismissRequest = { showAddToPlaylistDialog = false },
+                    containerColor = SpotifyElevated,
+                    title = {
+                        Text(
+                            text = "Tambahkan ke Playlist",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyText
+                        )
+                    },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            // Option: Create New Playlist
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        showAddToPlaylistDialog = false
+                                        showCreatePlaylistDialog = true
+                                    }
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(SpotifyHighlight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = SpotifyGreen,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Buat Playlist Baru",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpotifyGreen
+                                )
+                            }
+
+                            HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp)
+
+                            if (playlists.isEmpty()) {
+                                Text(
+                                    text = "Belum ada playlist kustom. Buat playlist baru di atas.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SpotifyTextSecondary,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    items(playlists) { p ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .clickable {
+                                                    val added = PlaylistManager.addTrackToPlaylist(context, p.id, track)
+                                                    showAddToPlaylistDialog = false
+                                                    if (added) {
+                                                        Toast.makeText(context, "Ditambahkan ke '${p.name}'", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        Toast.makeText(context, "Lagu sudah ada di '${p.name}'", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                                .padding(vertical = 6.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(SpotifyHighlight),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MusicNote,
+                                                    contentDescription = null,
+                                                    tint = SpotifyTextSecondary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = p.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = SpotifyText
+                                                )
+                                                Text(
+                                                    text = "${p.tracks.size} lagu",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = SpotifyTextSecondary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showAddToPlaylistDialog = false }) {
+                            Text("Tutup", color = SpotifyTextSecondary)
+                        }
+                    }
+                )
+            }
+
+            // 4. Create Playlist Dialog
+            if (showCreatePlaylistDialog) {
+                var newName by remember { mutableStateOf("") }
+                AlertDialog(
+                    onDismissRequest = { showCreatePlaylistDialog = false },
+                    containerColor = SpotifyElevated,
+                    title = {
+                        Text(
+                            text = "Beri Nama Playlist",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyText
+                        )
+                    },
+                    text = {
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            placeholder = { Text("Nama playlist Anda", color = SpotifyTextSecondary) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = SpotifyText,
+                                unfocusedTextColor = SpotifyText,
+                                focusedBorderColor = SpotifyGreen,
+                                unfocusedBorderColor = SpotifyHighlight
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (newName.isNotBlank()) {
+                                    val newP = PlaylistManager.createPlaylist(context, newName.trim())
+                                    PlaylistManager.addTrackToPlaylist(context, newP.id, track)
+                                    showCreatePlaylistDialog = false
+                                    Toast.makeText(context, "Playlist '${newP.name}' dibuat & lagu ditambahkan!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = SpotifyGreen)
+                        ) {
+                            Text("Buat", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showCreatePlaylistDialog = false }) {
+                            Text("Batal", color = SpotifyTextSecondary)
+                        }
+                    }
+                )
+            }
+
+            // 5. Artist Discography BottomSheet
             if (showArtistSheet) {
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 var artistTracks by remember { mutableStateOf<List<Track>>(emptyList()) }
@@ -517,6 +1005,47 @@ fun NowPlayingDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MoreOptionItem(
+    iconVector: ImageVector? = null,
+    iconPainter: androidx.compose.ui.graphics.painter.Painter? = null,
+    iconTint: Color = SpotifyText,
+    title: String,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 4.dp)
+    ) {
+        if (iconVector != null) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(26.dp)
+            )
+        } else if (iconPainter != null) {
+            Icon(
+                painter = iconPainter,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = SpotifyText
+        )
     }
 }
 

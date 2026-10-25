@@ -1,8 +1,14 @@
 package com.bahri.ryfy.playback
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.util.Log
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.database.StandaloneDatabaseProvider
@@ -13,6 +19,7 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.session.MediaSession
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Collections
 
 enum class ShuffleMode {
     OFF,
@@ -35,10 +43,16 @@ enum class ShuffleMode {
 object PlayerManager {
     private const val TAG = "PlayerManager"
     private var exoPlayer: ExoPlayer? = null
+    private var mediaSession: MediaSession? = null
+    private var appContext: Context? = null
     private val scope = CoroutineScope(Dispatchers.Main)
     private var progressJob: Job? = null
     private var playbackJob: Job? = null
+    private var prefetchJob: Job? = null
     private var simpleCache: SimpleCache? = null
+
+    // In-memory instant stream URL cache: videoId -> direct playable URL
+    private val streamUrlCache = Collections.synchronizedMap(LinkedHashMap<String, String>(50, 0.75f, true))
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
     val currentTrack: StateFlow<Track?> = _currentTrack.asStateFlow()
@@ -58,6 +72,8 @@ object PlayerManager {
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
 
+    fun getSession(): MediaSession? = mediaSession
+
     @Synchronized
     private fun getCache(context: Context): SimpleCache {
         return simpleCache ?: run {
@@ -71,35 +87,43 @@ object PlayerManager {
     fun init(context: Context) {
         if (exoPlayer != null) return
 
-        val appContext = context.applicationContext
+        val app = context.applicationContext
+        appContext = app
 
         // High reliability HTTP Data Source with long timeout & auto-redirects
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.6")
-            .setConnectTimeoutMs(20000)
-            .setReadTimeoutMs(35000)
+            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.9")
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(30000)
             .setAllowCrossProtocolRedirects(true)
 
         // Cache Data Source saves chunks locally to survive proxy drops
         val cacheDataSourceFactory = CacheDataSource.Factory()
-            .setCache(getCache(appContext))
+            .setCache(getCache(app))
             .setUpstreamDataSourceFactory(httpDataSourceFactory)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
         val mediaSourceFactory = DefaultMediaSourceFactory(cacheDataSourceFactory)
 
-        // Aggressive LoadControl: Buffers entire 3-4 MB track in first few seconds
+        // Ultra-low latency playback start (500ms initial buffer) + aggressive background buffer (5 mins)
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 60_000,   // minBufferMs (1 minute)
-                300_000,  // maxBufferMs (5 minutes - buffers full song)
-                1_500,    // bufferForPlaybackMs
-                3_000     // bufferForPlaybackAfterRebufferMs
+                300_000,  // maxBufferMs (5 minutes)
+                500,      // bufferForPlaybackMs: Starts almost instantly!
+                1_000     // bufferForPlaybackAfterRebufferMs
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
-        val player = ExoPlayer.Builder(appContext)
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
+
+        val player = ExoPlayer.Builder(app)
+            .setAudioAttributes(audioAttributes, true)
+            .setHandleAudioBecomingNoisy(true)
             .setMediaSourceFactory(mediaSourceFactory)
             .setLoadControl(loadControl)
             .build()
@@ -107,7 +131,12 @@ object PlayerManager {
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
                 _isPlaying.value = playing
-                if (playing) startProgressPolling() else stopProgressPolling()
+                if (playing) {
+                    startProgressPolling()
+                    startMediaService()
+                } else {
+                    stopProgressPolling()
+                }
             }
 
             override fun onPlaybackStateChanged(state: Int) {
@@ -123,10 +152,12 @@ object PlayerManager {
                 val lastPos = _currentPositionMs.value
                 if (cur != null && !cur.videoId.isNullOrBlank()) {
                     scope.launch {
-                        delay(1200)
+                        delay(1000)
                         val retryUrl = MusicApiService.resolveStreamUrl(cur.videoId)
                         if (!retryUrl.isNullOrBlank()) {
-                            exoPlayer?.setMediaItem(MediaItem.fromUri(retryUrl), lastPos)
+                            streamUrlCache[cur.videoId] = retryUrl
+                            val mediaItem = buildMediaItem(cur, retryUrl)
+                            exoPlayer?.setMediaItem(mediaItem, lastPos)
                             exoPlayer?.prepare()
                             exoPlayer?.play()
                         } else {
@@ -136,7 +167,37 @@ object PlayerManager {
                 }
             }
         })
+
         exoPlayer = player
+        mediaSession = MediaSession.Builder(app, player).build()
+    }
+
+    private fun startMediaService() {
+        appContext?.let { ctx ->
+            runCatching {
+                val intent = Intent(ctx, MediaPlaybackService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ctx.startForegroundService(intent)
+                } else {
+                    ctx.startService(intent)
+                }
+            }
+        }
+    }
+
+    private fun buildMediaItem(track: Track, url: String): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle(track.title)
+            .setArtist(track.artist)
+            .setAlbumTitle(track.album.ifBlank { "RyFy Spotless" })
+            .setArtworkUri(if (track.coverUrl.isNotBlank()) Uri.parse(track.coverUrl) else null)
+            .build()
+
+        return MediaItem.Builder()
+            .setMediaId(track.id)
+            .setUri(url)
+            .setMediaMetadata(metadata)
+            .build()
     }
 
     fun playTrack(track: Track, newQueue: List<Track>? = null) {
@@ -176,14 +237,16 @@ object PlayerManager {
             }
         }
 
-        // 4. Start playback
-        val streamUrl = track.streamUrl
-        if (!streamUrl.isNullOrBlank()) {
-            val mediaItem = MediaItem.fromUri(streamUrl)
+        // 4. Check in-memory stream cache for instant start (0 ms latency)
+        val cachedUrl = track.streamUrl ?: track.videoId?.let { streamUrlCache[it] }
+
+        if (!cachedUrl.isNullOrBlank()) {
+            val mediaItem = buildMediaItem(track, cachedUrl)
             player.setMediaItem(mediaItem)
             player.prepare()
             player.play()
             _isPlaying.value = true
+            prefetchNextTrack()
         } else {
             playbackJob = scope.launch {
                 var targetVideoId = track.videoId
@@ -204,17 +267,24 @@ object PlayerManager {
                 }
 
                 if (!targetVideoId.isNullOrBlank()) {
-                    val resolvedUrl = MusicApiService.resolveStreamUrl(targetVideoId)
+                    val resolvedUrl = streamUrlCache[targetVideoId]
+                        ?: MusicApiService.resolveStreamUrl(targetVideoId)
+
+                    if (!resolvedUrl.isNullOrBlank()) {
+                        streamUrlCache[targetVideoId] = resolvedUrl
+                    }
+
                     val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
                     val updated = currentTrackInfo.copy(streamUrl = resolvedUrl, lyrics = lyrics)
                     _currentTrack.value = updated
 
                     if (!resolvedUrl.isNullOrBlank()) {
-                        val mediaItem = MediaItem.fromUri(resolvedUrl)
+                        val mediaItem = buildMediaItem(updated, resolvedUrl)
                         player.setMediaItem(mediaItem)
                         player.prepare()
                         player.play()
                         _isPlaying.value = true
+                        prefetchNextTrack()
                     } else {
                         Log.w(TAG, "Failed to resolve stream for videoId $targetVideoId, auto-skipping to next")
                         playNext()
@@ -222,6 +292,34 @@ object PlayerManager {
                 } else {
                     Log.w(TAG, "No videoId found for track ${track.title}, auto-skipping to next")
                     playNext()
+                }
+            }
+        }
+    }
+
+    /**
+     * Prefetch next track's audio stream in background so when user presses Next, playback is instant.
+     */
+    private fun prefetchNextTrack() {
+        prefetchJob?.cancel()
+        prefetchJob = scope.launch(Dispatchers.IO) {
+            delay(4000) // Wait until current track is stably buffering
+            val cur = _currentTrack.value ?: return@launch
+            val list = _queue.value
+            val curIdx = list.indexOfFirst { it.id == cur.id || (it.title.equals(cur.title, true) && it.artist.equals(cur.artist, true)) }
+            val next = if (curIdx != -1 && curIdx + 1 < list.size) list[curIdx + 1] else null
+            if (next != null) {
+                var vid = next.videoId
+                if (vid.isNullOrBlank()) {
+                    val s = MusicApiService.searchSongs("${next.title} ${next.artist}")
+                    vid = s.firstOrNull()?.videoId
+                }
+                if (!vid.isNullOrBlank() && !streamUrlCache.containsKey(vid)) {
+                    val stream = MusicApiService.resolveStreamUrl(vid)
+                    if (!stream.isNullOrBlank()) {
+                        streamUrlCache[vid] = stream
+                        Log.d(TAG, "Prefetched next track audio stream: ${next.title}")
+                    }
                 }
             }
         }
@@ -262,7 +360,6 @@ object PlayerManager {
             if (currentIndex != -1 && currentIndex + 1 < currentList.size) {
                 playTrack(currentList[currentIndex + 1], currentList)
             } else if (currentList.isNotEmpty()) {
-                // Loop back to start or fetch fresh recommendations
                 playTrack(currentList.first(), currentList)
             }
         }
@@ -284,6 +381,18 @@ object PlayerManager {
         } else {
             seekTo(0)
         }
+    }
+
+    fun removeFromQueue(trackId: String) {
+        val cur = _currentTrack.value
+        if (cur?.id == trackId) return // Don't remove currently playing track
+        val updated = _queue.value.filter { it.id != trackId }
+        _queue.value = updated
+    }
+
+    fun clearQueueExceptCurrent() {
+        val cur = _currentTrack.value ?: return
+        _queue.value = listOf(cur)
     }
 
     fun cycleShuffleMode() {
