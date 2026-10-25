@@ -1,12 +1,11 @@
 {
-  "versionName": "1.0.16",
-  "versionCode": 17,
-  "publishedAt": "2026-10-25T17:30:00Z",
+  "versionName": "1.0.17",
+  "versionCode": 18,
+  "publishedAt": "2026-10-25T18:00:00Z",
   "changelog": [
-    "Full Reactive Multi-Language Engine: Bahasa Mandarin (中文), Jepang (日本語), Inggris (English), Spanyol (Español), dan lainnya kini 100% berfungsi aktif di seluruh layar Beranda, Pencarian, Library, Pengaturan, dan Pemutar Musik",
-    "Sapaan Waktu Multibahasa Dinamis: Sapaan waktu menyesuaikan bahasa (misal: 早上好, Good morning, Buenos días)",
-    "Tab Navigasi & Chip Genre Terjemahan Real-Time: Seluruh label genre dan tab berubah instan dalam 0 ms saat bahasa dipilih",
+    "Fix Bug Aplikasi Dobel Saat Update (Auto-Deduplication): Mematikan komponen launcher duplikat secara otomatis saat app dibuka, memastikan hanya tepat 1 ikon RyFy di Layar Utama HP",
+    "Pembersihan Bersih Alias Lama: Mengisolasi activity-alias lama (LauncherNeon/Spotify) agar tidak pernah bentrok dengan MainActivity",
     "Single Dex & Keystore Pinned: Tetap tepat 1 file classes.dex dan ukuran ramping ~4.4 MB"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.16/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.17/app-release.apk"
 }
