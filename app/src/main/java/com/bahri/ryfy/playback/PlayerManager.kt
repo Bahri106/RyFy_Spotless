@@ -105,13 +105,13 @@ object PlayerManager {
 
         val mediaSourceFactory = DefaultMediaSourceFactory(cacheDataSourceFactory)
 
-        // Ultra-low latency playback start (500ms initial buffer) + aggressive background buffer (5 mins)
+        // Ultra-low latency playback start (250ms buffer) + aggressive background buffer (5 mins)
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                60_000,   // minBufferMs (1 minute)
+                15_000,   // minBufferMs (15 seconds)
                 300_000,  // maxBufferMs (5 minutes)
-                500,      // bufferForPlaybackMs: Starts almost instantly!
-                1_000     // bufferForPlaybackAfterRebufferMs
+                250,      // bufferForPlaybackMs: Instant start (< 250ms)!
+                500       // bufferForPlaybackAfterRebufferMs
             )
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
@@ -133,7 +133,6 @@ object PlayerManager {
                 _isPlaying.value = playing
                 if (playing) {
                     startProgressPolling()
-                    startMediaService()
                 } else {
                     stopProgressPolling()
                 }
@@ -147,13 +146,13 @@ object PlayerManager {
 
             override fun onPlayerError(error: PlaybackException) {
                 Log.e(TAG, "Playback error [${error.errorCodeName}]: ${error.message}", error)
-                // Auto reconnect on socket drop
+                // Auto reconnect with fallback mirror
                 val cur = _currentTrack.value
                 val lastPos = _currentPositionMs.value
                 if (cur != null && !cur.videoId.isNullOrBlank()) {
                     scope.launch {
-                        delay(1000)
-                        val retryUrl = MusicApiService.resolveStreamUrl(cur.videoId)
+                        delay(500)
+                        val retryUrl = MusicApiService.resolveFallbackStreamUrl(cur.videoId)
                         if (!retryUrl.isNullOrBlank()) {
                             streamUrlCache[cur.videoId] = retryUrl
                             val mediaItem = buildMediaItem(cur, retryUrl)
@@ -169,19 +168,10 @@ object PlayerManager {
         })
 
         exoPlayer = player
-        mediaSession = MediaSession.Builder(app, player).build()
-    }
-
-    private fun startMediaService() {
-        appContext?.let { ctx ->
-            runCatching {
-                val intent = Intent(ctx, MediaPlaybackService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    ctx.startForegroundService(intent)
-                } else {
-                    ctx.startService(intent)
-                }
-            }
+        runCatching {
+            mediaSession = MediaSession.Builder(app, player).build()
+        }.onFailure {
+            Log.w(TAG, "MediaSession initialization skipped: ${it.message}")
         }
     }
 
@@ -274,8 +264,7 @@ object PlayerManager {
                         streamUrlCache[targetVideoId] = resolvedUrl
                     }
 
-                    val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
-                    val updated = currentTrackInfo.copy(streamUrl = resolvedUrl, lyrics = lyrics)
+                    val updated = currentTrackInfo.copy(streamUrl = resolvedUrl)
                     _currentTrack.value = updated
 
                     if (!resolvedUrl.isNullOrBlank()) {
@@ -285,6 +274,18 @@ object PlayerManager {
                         player.play()
                         _isPlaying.value = true
                         prefetchNextTrack()
+
+                        // Asynchronous non-blocking background lyrics retrieval
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                val lyrics = MusicApiService.fetchLyrics(track.title, track.artist)
+                                if (!lyrics.isNullOrBlank() && _currentTrack.value?.id == updated.id) {
+                                    _currentTrack.value = _currentTrack.value?.copy(lyrics = lyrics)
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Background lyrics fetch failed: ${e.message}")
+                            }
+                        }
                     } else {
                         Log.w(TAG, "Failed to resolve stream for videoId $targetVideoId, auto-skipping to next")
                         playNext()
