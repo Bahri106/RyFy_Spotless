@@ -10,6 +10,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -141,6 +142,10 @@ object PlayerManager {
             .build()
 
         player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                EqualizerManager.attachAudioSession(audioSessionId)
+            }
+
             override fun onIsPlayingChanged(playing: Boolean) {
                 _isPlaying.value = playing
                 if (playing) {
@@ -158,7 +163,9 @@ object PlayerManager {
                         _currentTrack.value = _currentTrack.value?.copy(durationMs = realDuration)
                     }
                 } else if (state == Player.STATE_ENDED) {
-                    playNext()
+                    if (!SleepTimerManager.onTrackEnded()) {
+                        playNext()
+                    }
                 }
             }
 
@@ -187,6 +194,7 @@ object PlayerManager {
 
         exoPlayer = player
         runCatching {
+            EqualizerManager.attachAudioSession(player.audioSessionId)
             mediaSession = MediaSession.Builder(app, player).build()
         }.onFailure {
             Log.w(TAG, "MediaSession initialization skipped: ${it.message}")
@@ -264,6 +272,7 @@ object PlayerManager {
             player.setMediaItem(mediaItem)
             player.prepare()
             player.play()
+            applyFadeIn(player)
             _isPlaying.value = true
             updateSystemNotification()
             prefetchNextTrack()
@@ -302,6 +311,7 @@ object PlayerManager {
                         player.setMediaItem(mediaItem)
                         player.prepare()
                         player.play()
+                        applyFadeIn(player)
                         _isPlaying.value = true
                         updateSystemNotification()
                         prefetchNextTrack()
@@ -314,6 +324,16 @@ object PlayerManager {
                     playNext()
                 }
             }
+        }
+    }
+
+    private fun applyFadeIn(player: ExoPlayer) {
+        scope.launch {
+            player.volume = 0.3f
+            delay(200)
+            player.volume = 0.6f
+            delay(200)
+            player.volume = 1.0f
         }
     }
 
@@ -465,6 +485,18 @@ object PlayerManager {
         exoPlayer?.repeatMode = nextMode
     }
 
+    private val _playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
+
+    fun setPlaybackSpeed(speed: Float) {
+        _playbackSpeed.value = speed
+        exoPlayer?.playbackParameters = PlaybackParameters(speed)
+    }
+
+    fun pause() {
+        exoPlayer?.pause()
+    }
+
     private fun startProgressPolling() {
         progressJob?.cancel()
         progressJob = scope.launch {
@@ -472,8 +504,18 @@ object PlayerManager {
                 exoPlayer?.let { player ->
                     _currentPositionMs.value = player.currentPosition
                     val realDuration = player.duration
-                    if (realDuration > 0 && _currentTrack.value != null && _currentTrack.value?.durationMs != realDuration) {
-                        _currentTrack.value = _currentTrack.value?.copy(durationMs = realDuration)
+                    if (realDuration > 0) {
+                        if (_currentTrack.value != null && _currentTrack.value?.durationMs != realDuration) {
+                            _currentTrack.value = _currentTrack.value?.copy(durationMs = realDuration)
+                        }
+                        // Smooth crossfade out (last 3 seconds of track)
+                        val remaining = realDuration - player.currentPosition
+                        if (remaining in 1..3000) {
+                            val fade = (remaining / 3000f).coerceIn(0.15f, 1.0f)
+                            player.volume = fade
+                        } else if (remaining > 3000 && player.volume < 1.0f) {
+                            player.volume = 1.0f
+                        }
                     }
                 }
                 delay(500)

@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.bahri.ryfy.data.CustomPlaylist
 import com.bahri.ryfy.data.FavoritesManager
+import com.bahri.ryfy.data.OfflineTrackManager
 import com.bahri.ryfy.data.PlaylistManager
 import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.ui.theme.SpotifyDark
@@ -84,12 +85,14 @@ fun LibraryScreen() {
     val context = LocalContext.current
     val favorites by FavoritesManager.favorites.collectAsState()
     val customPlaylists by PlaylistManager.playlists.collectAsState()
+    val offlineTracks by OfflineTrackManager.offlineTracks.collectAsState()
 
     var selectedFilter by remember { mutableStateOf("Semua") }
     val filters = listOf("Semua", "Playlist", "Artis", "Diunduh")
 
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var showImportPlaylistDialog by remember { mutableStateOf(false) }
+    var showOfflineSheet by remember { mutableStateOf(false) }
     var selectedPlaylistForDetail by remember { mutableStateOf<CustomPlaylist?>(null) }
 
     LazyColumn(
@@ -173,11 +176,15 @@ fun LibraryScreen() {
         item {
             LibraryRow(
                 title = "Musik Tersimpan Offline",
-                subtitle = "Tersedia tanpa koneksi internet",
+                subtitle = "${offlineTracks.size} lagu · Tersedia tanpa internet",
                 brush = Brush.linearGradient(listOf(Color(0xFF006450), Color(0xFF1DB954))),
                 icon = Icons.Default.DownloadDone,
                 onClick = {
-                    PlayerManager.playTrack(SAMPLE_TRACKS.first(), SAMPLE_TRACKS)
+                    if (offlineTracks.isNotEmpty()) {
+                        showOfflineSheet = true
+                    } else {
+                        Toast.makeText(context, "Belum ada lagu yang diunduh. Unduh lewat menu titik 3 di pemutar.", Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
         }
@@ -495,6 +502,122 @@ fun LibraryScreen() {
                 }
             }
         )
+    }
+
+    // Offline Tracks BottomSheet
+    if (showOfflineSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showOfflineSheet = false },
+            sheetState = sheetState,
+            containerColor = SpotifyElevated,
+            contentColor = SpotifyText
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Musik Tersimpan Offline",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = SpotifyText
+                        )
+                        Text(
+                            text = "${offlineTracks.size} lagu siap diputar tanpa internet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SpotifyGreen
+                        )
+                    }
+
+                    if (offlineTracks.isNotEmpty()) {
+                        IconButton(onClick = {
+                            PlayerManager.playTrack(offlineTracks.first(), offlineTracks)
+                            showOfflineSheet = false
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Putar Semua Offline",
+                                tint = SpotifyGreen,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 12.dp))
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(320.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(offlineTracks) { track ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    PlayerManager.playTrack(track, offlineTracks)
+                                    showOfflineSheet = false
+                                }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            if (track.coverUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = track.coverUrl,
+                                    contentDescription = track.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = track.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SpotifyText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = track.artist,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SpotifyTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            IconButton(onClick = {
+                                OfflineTrackManager.deleteOfflineTrack(context, track.id)
+                                Toast.makeText(context, "Lagu offline dihapus", Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Hapus",
+                                    tint = SpotifyTextSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

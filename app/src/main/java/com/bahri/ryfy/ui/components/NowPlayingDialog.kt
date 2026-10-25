@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +29,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
@@ -35,6 +39,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,11 +84,16 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import com.bahri.ryfy.R
+import com.bahri.ryfy.data.OfflineTrackManager
 import com.bahri.ryfy.data.PlaylistManager
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
 import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.playback.ShuffleMode
+import com.bahri.ryfy.playback.SleepTimerManager
+import com.bahri.ryfy.ui.dialogs.EqualizerDialog
+import com.bahri.ryfy.ui.dialogs.PlaybackSpeedDialog
+import com.bahri.ryfy.ui.dialogs.SleepTimerDialog
 import com.bahri.ryfy.ui.theme.SpotifyBlack
 import com.bahri.ryfy.ui.theme.SpotifyDark
 import com.bahri.ryfy.ui.theme.SpotifyElevated
@@ -119,6 +130,12 @@ fun NowPlayingDialog(
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var showFullscreenLyrics by remember { mutableStateOf(false) }
+    var showSleepTimerDialog by remember { mutableStateOf(false) }
+    var showEqualizerDialog by remember { mutableStateOf(false) }
+    var showPlaybackSpeedDialog by remember { mutableStateOf(false) }
+
+    val isDownloaded = OfflineTrackManager.isDownloaded(track.id)
+    val isDownloading = OfflineTrackManager.isDownloading(track.id)
 
     val queueList by PlayerManager.queue.collectAsState()
     val playlists by PlaylistManager.playlists.collectAsState()
@@ -536,7 +553,57 @@ fun NowPlayingDialog(
                             }
                         )
 
-                        // Option 5: Bagikan
+                        // Option 5: Unduh Lagu Offline
+                        MoreOptionItem(
+                            iconVector = if (isDownloaded) Icons.Default.DownloadDone else Icons.Default.Download,
+                            title = if (isDownloading) "Sedang Mengunduh..." else if (isDownloaded) "Hapus Lagu Offline" else "Unduh Lagu Offline",
+                            iconTint = if (isDownloaded) SpotifyGreen else SpotifyText,
+                            onClick = {
+                                showMoreOptions = false
+                                if (isDownloaded) {
+                                    OfflineTrackManager.deleteOfflineTrack(context, track.id)
+                                    android.widget.Toast.makeText(context, "Lagu offline dihapus", android.widget.Toast.LENGTH_SHORT).show()
+                                } else if (!isDownloading) {
+                                    android.widget.Toast.makeText(context, "Mulai mengunduh...", android.widget.Toast.LENGTH_SHORT).show()
+                                    OfflineTrackManager.downloadTrack(context, track) { success ->
+                                        val msg = if (success) "Lagu berhasil diunduh!" else "Gagal mengunduh lagu"
+                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        )
+
+                        // Option 6: Pengatur Waktu Tidur
+                        MoreOptionItem(
+                            iconVector = Icons.Default.Timer,
+                            title = "Pengatur Waktu Tidur",
+                            onClick = {
+                                showMoreOptions = false
+                                showSleepTimerDialog = true
+                            }
+                        )
+
+                        // Option 7: Equalizer & Efek Suara
+                        MoreOptionItem(
+                            iconVector = Icons.Default.GraphicEq,
+                            title = "Equalizer & Efek Suara",
+                            onClick = {
+                                showMoreOptions = false
+                                showEqualizerDialog = true
+                            }
+                        )
+
+                        // Option 8: Kecepatan Pemutaran
+                        MoreOptionItem(
+                            iconVector = Icons.Default.Speed,
+                            title = "Kecepatan Pemutaran (Slowed / Speed)",
+                            onClick = {
+                                showMoreOptions = false
+                                showPlaybackSpeedDialog = true
+                            }
+                        )
+
+                        // Option 9: Bagikan
                         MoreOptionItem(
                             iconVector = Icons.Default.Share,
                             title = "Bagikan Lagu",
@@ -1076,8 +1143,23 @@ fun NowPlayingDialog(
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
 
-                        val fullLyrics = cleanLyricsText(track.lyrics)
-                        if (fullLyrics.isBlank()) {
+                        val parsedLines = remember(track.lyrics) { parseLrcLyrics(track.lyrics) }
+                        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+                        val activeLineIndex = remember(parsedLines, progressMs) {
+                            if (parsedLines.isEmpty() || parsedLines.none { it.timeMs >= 0 }) -1
+                            else {
+                                parsedLines.indexOfLast { it.timeMs <= progressMs }
+                            }
+                        }
+
+                        LaunchedEffect(activeLineIndex) {
+                            if (activeLineIndex in parsedLines.indices) {
+                                listState.animateScrollToItem((activeLineIndex - 2).coerceAtLeast(0))
+                            }
+                        }
+
+                        if (parsedLines.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1092,17 +1174,28 @@ fun NowPlayingDialog(
                             }
                         } else {
                             LazyColumn(
+                                state = listState,
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                                contentPadding = PaddingValues(vertical = 16.dp)
+                                verticalArrangement = Arrangement.spacedBy(18.dp),
+                                contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
                             ) {
-                                items(fullLyrics.lines()) { line ->
+                                itemsIndexed(parsedLines) { idx, line ->
+                                    val isCurrent = idx == activeLineIndex
                                     Text(
-                                        text = line,
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        lineHeight = 32.sp,
-                                        color = SpotifyText
+                                        text = line.text,
+                                        style = if (isCurrent) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall,
+                                        fontWeight = if (isCurrent) FontWeight.ExtraBold else FontWeight.Bold,
+                                        lineHeight = if (isCurrent) 38.sp else 32.sp,
+                                        color = if (isCurrent) SpotifyGreen else SpotifyTextSecondary.copy(alpha = 0.5f),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                if (line.timeMs >= 0) {
+                                                    PlayerManager.seekTo(line.timeMs)
+                                                }
+                                            }
+                                            .padding(vertical = 4.dp)
                                     )
                                 }
                             }
@@ -1110,8 +1203,47 @@ fun NowPlayingDialog(
                     }
                 }
             }
+
+            // 6. Sleep Timer Dialog
+            if (showSleepTimerDialog) {
+                SleepTimerDialog(onDismiss = { showSleepTimerDialog = false })
+            }
+
+            // 7. Equalizer Dialog
+            if (showEqualizerDialog) {
+                EqualizerDialog(onDismiss = { showEqualizerDialog = false })
+            }
+
+            // 8. Playback Speed Dialog
+            if (showPlaybackSpeedDialog) {
+                PlaybackSpeedDialog(onDismiss = { showPlaybackSpeedDialog = false })
+            }
         }
     }
+}
+
+data class ParsedLrcLine(val timeMs: Long, val text: String)
+
+private fun parseLrcLyrics(raw: String?): List<ParsedLrcLine> {
+    if (raw.isNullOrBlank()) return emptyList()
+    val regex = Regex("\\[(\\d+):(\\d+(?:\\.\\d+)?)\\](.*)")
+    val list = mutableListOf<ParsedLrcLine>()
+    for (line in raw.lines()) {
+        val trimmed = line.trim()
+        val match = regex.find(trimmed)
+        if (match != null) {
+            val min = match.groupValues[1].toLongOrNull() ?: 0L
+            val sec = match.groupValues[2].toDoubleOrNull() ?: 0.0
+            val text = match.groupValues[3].trim()
+            val timeMs = (min * 60 * 1000 + sec * 1000).toLong()
+            if (text.isNotBlank()) {
+                list.add(ParsedLrcLine(timeMs, text))
+            }
+        } else if (trimmed.isNotBlank() && !trimmed.startsWith("[")) {
+            list.add(ParsedLrcLine(-1L, trimmed))
+        }
+    }
+    return list
 }
 
 private fun cleanLyricsText(raw: String?): String {

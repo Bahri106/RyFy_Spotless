@@ -59,6 +59,7 @@ import com.bahri.ryfy.core.AppLanguageManager
 import com.bahri.ryfy.ui.dialogs.AboutRyFyDialog
 import com.bahri.ryfy.ui.dialogs.AppIconDialog
 import com.bahri.ryfy.ui.dialogs.DeveloperBottomSheet
+import com.bahri.ryfy.ui.dialogs.EqualizerDialog
 import com.bahri.ryfy.ui.dialogs.LanguageSelectionDialog
 import com.bahri.ryfy.ui.theme.SpotifyElevated
 import com.bahri.ryfy.ui.theme.SpotifyGreen
@@ -78,6 +79,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showEqualizerDialog by remember { mutableStateOf(false) }
 
     val currentLangCode by AppLanguageManager.currentLanguage.collectAsState()
     val currentLangLabel = AppLanguageManager.supportedLanguages.firstOrNull { it.code.equals(currentLangCode, true) }?.nativeName ?: "Default Sistem"
@@ -144,11 +146,9 @@ fun SettingsScreen(updateManager: UpdateManager) {
                     Column {
                         SettingsItemRow(
                             icon = Icons.Default.GraphicEq,
-                            title = "Kualitas Audio Streaming",
-                            subtitle = "Sangat Tinggi (256 kbps Opus / 1 Gbps Fast-Stream)",
-                            onClick = {
-                                Toast.makeText(context, "Kualitas audio diatur ke Maksimal (1 Gbps Fast-Stream)", Toast.LENGTH_SHORT).show()
-                            }
+                            title = "Equalizer & Efek Suara",
+                            subtitle = "Penguat Bass (Bass Boost), Preset Musik, & 5-Band Slider",
+                            onClick = { showEqualizerDialog = true }
                         )
 
                         HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
@@ -266,6 +266,11 @@ fun SettingsScreen(updateManager: UpdateManager) {
             currentLanguageCode = currentLangCode,
             onDismiss = { showLanguageDialog = false }
         )
+    }
+
+    // Equalizer Dialog
+    if (showEqualizerDialog) {
+        EqualizerDialog(onDismiss = { showEqualizerDialog = false })
     }
 
     // Update Dialog
