@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">RyFy</string>
+    <string name="app_sub_name">Spotless Music</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_library">Your Library</string>
+    <string name="nav_settings">Settings</string>
+</resources>

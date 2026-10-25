@@ -1,0 +1,307 @@
+package com.bahri.ryfy.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.bahri.ryfy.model.Track
+import com.bahri.ryfy.playback.PlayerManager
+import com.bahri.ryfy.ui.theme.SpotifyElevated
+import com.bahri.ryfy.ui.theme.SpotifyGreen
+import com.bahri.ryfy.ui.theme.SpotifyHighlight
+import com.bahri.ryfy.ui.theme.SpotifyText
+import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import java.util.Calendar
+
+val SAMPLE_TRACKS = listOf(
+    Track(
+        id = "1",
+        title = "Komang",
+        artist = "Raim Laode",
+        album = "Komang - Single",
+        durationMs = 222000,
+        coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80",
+        isLiked = true
+    ),
+    Track(
+        id = "2",
+        title = "Sial",
+        artist = "Mahalini",
+        album = "Fábula",
+        durationMs = 243000,
+        coverUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80",
+        isLiked = true
+    ),
+    Track(
+        id = "3",
+        title = "Rayuan Perempuan Gila",
+        artist = "Nadin Amizah",
+        album = "Untuk Dunia, Cinta, dan Kotornya",
+        durationMs = 312000,
+        coverUrl = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80",
+        isLiked = false
+    ),
+    Track(
+        id = "4",
+        title = "Nanti Kita Seperti Ini",
+        artist = "Batas Senja",
+        album = "Nanti Kita Seperti Ini",
+        durationMs = 239000,
+        coverUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80",
+        isLiked = false
+    ),
+    Track(
+        id = "5",
+        title = "Tak Segampang Itu",
+        artist = "Anggi Marito",
+        album = "Tak Segampang Itu - Single",
+        durationMs = 231000,
+        coverUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=500&auto=format&fit=crop&q=80",
+        isLiked = true
+    )
+)
+
+@Composable
+fun HomeScreen() {
+    val greeting = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 4..11 -> "Selamat pagi"
+            in 12..15 -> "Selamat siang"
+            in 16..18 -> "Selamat sore"
+            else -> "Selamat malam"
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Greeting Header
+        item {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text(
+                    text = "$greeting, Saiful Bahri",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = SpotifyText
+                )
+                Text(
+                    text = "RyFy Spotless · Bebas Iklan & Tanpa Batas",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SpotifyGreen,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        // Quick Grid Playlists (6 items, 2 columns)
+        item {
+            val quickItems = listOf(
+                "Lagu yang Disukai" to Icons.Default.Favorite,
+                "Top Hits Indonesia" to Icons.Default.MusicNote,
+                "Daily Mix 1" to Icons.Default.MusicNote,
+                "Rock Classics" to Icons.Default.MusicNote,
+                "Deep Focus" to Icons.Default.MusicNote,
+                "Release Radar" to Icons.Default.MusicNote
+            )
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                for (row in 0 until 3) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        for (col in 0 until 2) {
+                            val item = quickItems[row * 2 + col]
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = SpotifyElevated,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                                    .clickable {
+                                        PlayerManager.playTrack(SAMPLE_TRACKS.first(), SAMPLE_TRACKS)
+                                    }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .background(if (item.first == "Lagu yang Disukai") Color(0xFF431885) else SpotifyHighlight)
+                                    ) {
+                                        Icon(
+                                            imageVector = item.second,
+                                            contentDescription = null,
+                                            tint = SpotifyText,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = item.first,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SpotifyText,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Made For You Section
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Dibuat untuk Anda",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(SAMPLE_TRACKS) { track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { PlayerManager.playTrack(track, SAMPLE_TRACKS) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Charts Section
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Tangga Lagu Teratas",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SpotifyText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(SAMPLE_TRACKS.reversed()) { track ->
+                        TrackCard(
+                            track = track,
+                            onClick = { PlayerManager.playTrack(track, SAMPLE_TRACKS) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackCard(
+    track: Track,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(148.dp)
+            .clickable(onClick = onClick)
+    ) {
+        if (track.coverUrl.isNotBlank()) {
+            AsyncImage(
+                model = track.coverUrl,
+                contentDescription = track.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        } else {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(SpotifyHighlight)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = SpotifyTextSecondary,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = track.title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = SpotifyText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Text(
+            text = track.artist,
+            style = MaterialTheme.typography.bodySmall,
+            color = SpotifyTextSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
