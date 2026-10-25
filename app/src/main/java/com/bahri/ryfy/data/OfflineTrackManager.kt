@@ -1,6 +1,7 @@
 package com.bahri.ryfy.data
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.bahri.ryfy.data.api.MusicApiService
 import com.bahri.ryfy.model.Track
@@ -11,16 +12,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
+import java.util.concurrent.TimeUnit
 
 object OfflineTrackManager {
     private const val TAG = "OfflineTrackManager"
     private const val PREFS_NAME = "ryfy_offline_prefs"
     private const val KEY_TRACKS = "offline_tracks_list"
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
 
     private val _offlineTracks = MutableStateFlow<List<Track>>(emptyList())
     val offlineTracks: StateFlow<List<Track>> = _offlineTracks.asStateFlow()
@@ -51,7 +61,7 @@ object OfflineTrackManager {
                             album = obj.optString("album", "Offline"),
                             durationMs = obj.optLong("durationMs", 210000L),
                             coverUrl = obj.optString("coverUrl"),
-                            streamUrl = localFile.toURI().toString(),
+                            streamUrl = Uri.fromFile(localFile).toString(),
                             videoId = obj.optString("videoId")
                         )
                     )
@@ -74,11 +84,12 @@ object OfflineTrackManager {
     fun getFile(context: Context, trackId: String): File {
         val dir = File(context.filesDir, "offline_tracks")
         if (!dir.exists()) dir.mkdirs()
-        return File(dir, "$trackId.mp4")
+        val safeId = trackId.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        return File(dir, "$safeId.mp4")
     }
 
     fun downloadTrack(context: Context, track: Track, onFinish: (Boolean) -> Unit = {}) {
-        val vid = track.videoId ?: track.id
+        val vid = track.videoId?.ifBlank { null } ?: track.id
         if (vid.isBlank() || isDownloaded(track.id)) {
             onFinish(true)
             return
@@ -87,44 +98,73 @@ object OfflineTrackManager {
         _downloadingIds.value = _downloadingIds.value + track.id
 
         scope.launch {
+            val targetFile = getFile(context, track.id)
+            val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp")
+            var success = false
+
             try {
-                val streamUrl = track.streamUrl ?: MusicApiService.resolveStreamUrl(vid)
-                if (streamUrl.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) {
-                        _downloadingIds.value = _downloadingIds.value - track.id
-                        onFinish(false)
+                // 1. Resolve candidate stream URLs: Existing HTTP -> Primary VPS -> Fallback Invidious
+                val primaryUrl = track.streamUrl.takeIf { !it.isNullOrBlank() && it.startsWith("http") }
+                    ?: MusicApiService.resolveStreamUrl(vid)
+                val fallbackUrl = MusicApiService.resolveFallbackStreamUrl(vid)
+
+                val candidates = listOfNotNull(primaryUrl, fallbackUrl).distinct()
+
+                for (url in candidates) {
+                    try {
+                        val req = Request.Builder()
+                            .url(url)
+                            .header("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.18")
+                            .header("Accept", "*/*")
+                            .build()
+
+                        httpClient.newCall(req).execute().use { resp ->
+                            if (resp.isSuccessful && resp.body != null) {
+                                val body = resp.body!!
+                                body.byteStream().use { input ->
+                                    FileOutputStream(tempFile).use { output ->
+                                        input.copyTo(output)
+                                    }
+                                }
+                                if (tempFile.exists() && tempFile.length() > 10000) {
+                                    if (targetFile.exists()) targetFile.delete()
+                                    if (tempFile.renameTo(targetFile)) {
+                                        success = true
+                                        return@use
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Download attempt failed for $url: ${e.message}")
                     }
-                    return@launch
+
+                    if (success) break
                 }
 
-                val targetFile = getFile(context, track.id)
-                val conn = URL(streamUrl).openConnection()
-                conn.connectTimeout = 15000
-                conn.readTimeout = 30000
-
-                conn.getInputStream().use { input ->
-                    FileOutputStream(targetFile).use { output ->
-                        input.copyTo(output)
-                    }
+                if (success) {
+                    val offlineUri = Uri.fromFile(targetFile).toString()
+                    val offlineTrack = track.copy(
+                        streamUrl = offlineUri,
+                        videoId = vid
+                    )
+                    val current = _offlineTracks.value.toMutableList()
+                    current.removeAll { it.id == track.id }
+                    current.add(0, offlineTrack)
+                    _offlineTracks.value = current
+                    savePrefs(context, current)
+                    Log.d(TAG, "Track downloaded successfully: ${track.title} (${targetFile.length()} bytes)")
+                } else {
+                    if (tempFile.exists()) tempFile.delete()
+                    Log.e(TAG, "All stream candidates failed for ${track.title}")
                 }
-
-                val offlineTrack = track.copy(streamUrl = targetFile.toURI().toString())
-                val current = _offlineTracks.value.toMutableList()
-                current.removeAll { it.id == track.id }
-                current.add(0, offlineTrack)
-                _offlineTracks.value = current
-                savePrefs(context, current)
-
-                withContext(Dispatchers.Main) {
-                    _downloadingIds.value = _downloadingIds.value - track.id
-                    onFinish(true)
-                }
-                Log.d(TAG, "Track downloaded successfully: ${track.title}")
             } catch (e: Exception) {
-                Log.e(TAG, "Download failed for ${track.title}: ${e.message}")
+                if (tempFile.exists()) tempFile.delete()
+                Log.e(TAG, "Download fatal error for ${track.title}: ${e.message}")
+            } finally {
                 withContext(Dispatchers.Main) {
                     _downloadingIds.value = _downloadingIds.value - track.id
-                    onFinish(false)
+                    onFinish(success)
                 }
             }
         }
@@ -133,6 +173,9 @@ object OfflineTrackManager {
     fun deleteOfflineTrack(context: Context, trackId: String) {
         val f = getFile(context, trackId)
         if (f.exists()) f.delete()
+        val temp = File(f.parentFile, "${f.name}.tmp")
+        if (temp.exists()) temp.delete()
+
         val current = _offlineTracks.value.filter { it.id != trackId }
         _offlineTracks.value = current
         savePrefs(context, current)

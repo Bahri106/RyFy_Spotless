@@ -1,0 +1,7 @@
+[
+  "Fix Mesin Unduh Offline: Unduh andal bertenaga OkHttp dengan bypass Cloudflare WAF, multi-stream fallback, dan verifikasi integritas",
+  "Playback File Audio Lokal: ExoPlayer resmi mendukung pemutaran langsung lagu dari storage internal HP tanpa internet",
+  "Dukungan Auto-Fallback Stream: Beralih otomatis ke server cadangan jika jalur stream utama mengalami gangguan",
+  "Changelog Dinamis (1:1 Standar Rolleys): Teks dialog 'Yang Baru di RyFy' otomatis memuat metadata rilis dari version.json",
+  "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.4 MB dengan 1 classes.dex"
+]

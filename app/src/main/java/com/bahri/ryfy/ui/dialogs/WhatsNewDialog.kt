@@ -55,19 +55,36 @@ object WhatsNewHelper {
     }
 }
 
-val RELEASE_HIGHLIGHTS = listOf(
-    "Media Notification & Lockscreen: Kontrol lagu aktif di status bar, dynamic island, dan layar kunci HP.",
-    "Fitur Lagu yang Disukai (Love Icon): Simpan lagu favorit secara permanen dan sinkron ke tab Library.",
-    "Menu 3-Titik Player: Bagikan lagu, lihat karya artis, dan pantau antrean lagu berikutnya.",
-    "Auto-Update OTA Popup (1:1 Rolleys): Notifikasi pembaruan otomatis muncul saat versi baru tersedia.",
-    "Fix Kompatibilitas Android 11: Instalasi lancar tanpa error paket.",
-    "Logo Baru & FAB Custom Icon Launcher: Pilihan tema ikon Neon, Spotify Classic, dan Mono."
+fun loadReleaseItems(context: Context): List<String> {
+    return runCatching {
+        context.assets.open("changelog.json").bufferedReader().use { reader ->
+            val array = org.json.JSONArray(reader.readText())
+            val items = mutableListOf<String>()
+            for (i in 0 until array.length()) {
+                val line = array.optString(i, "").trim()
+                if (line.isNotEmpty()) items.add(line)
+            }
+            items
+        }
+    }.getOrElse { emptyList() }
+}
+
+val DEFAULT_RELEASE_HIGHLIGHTS = listOf(
+    "Fix Mesin Unduh Offline: Unduh andal bertenaga OkHttp dengan bypass Cloudflare WAF dan verifikasi integritas",
+    "Playback File Audio Lokal: ExoPlayer kini resmi mendukung pemutaran langsung lagu dari storage internal HP",
+    "Dukungan Auto-Fallback Stream: Beralih otomatis ke server cadangan jika jalur stream utama sibuk",
+    "Changelog Dinamis 1:1 Rolleys: Teks 'Yang Baru' otomatis diperbarui dari version.json saat rilis baru",
+    "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.4 MB dengan 1 classes.dex"
 )
 
 @Composable
 fun WhatsNewDialog(
     onDismiss: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val releaseItems = androidx.compose.runtime.remember(context) {
+        loadReleaseItems(context).ifEmpty { DEFAULT_RELEASE_HIGHLIGHTS }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = SpotifyElevated,
@@ -118,7 +135,7 @@ fun WhatsNewDialog(
                     color = SpotifyTextSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                RELEASE_HIGHLIGHTS.forEach { item ->
+                releaseItems.forEach { item ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Top

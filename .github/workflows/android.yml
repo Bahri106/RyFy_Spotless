@@ -33,6 +33,11 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Auto-generate assets/changelog.json from version.json
+        run: |
+          mkdir -p app/src/main/assets
+          python3 -c "import json; v=json.load(open('version.json')); json.dump(v.get('changelog', []), open('app/src/main/assets/changelog.json', 'w', encoding='utf-8'), indent=2)"
+
       - name: Build Android Release APK (Minified & Single Dex)
         run: ./gradlew assembleRelease --build-cache --parallel --stacktrace
 

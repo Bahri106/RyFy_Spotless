@@ -13,6 +13,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
@@ -105,15 +106,18 @@ object PlayerManager {
 
         // High reliability HTTP Data Source with long timeout & auto-redirects
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.9")
+            .setUserAgent("Mozilla/5.0 (Linux; Android 14; Mobile) RyFy/1.0.18")
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(30000)
             .setAllowCrossProtocolRedirects(true)
 
+        // Supports file:// (offline storage), content://, asset://, and delegates http(s):// to httpDataSourceFactory
+        val upstreamDataSourceFactory = DefaultDataSource.Factory(app, httpDataSourceFactory)
+
         // Cache Data Source saves chunks locally to survive proxy drops
         val cacheDataSourceFactory = CacheDataSource.Factory()
             .setCache(getCache(app))
-            .setUpstreamDataSourceFactory(httpDataSourceFactory)
+            .setUpstreamDataSourceFactory(upstreamDataSourceFactory)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
         val mediaSourceFactory = DefaultMediaSourceFactory(cacheDataSourceFactory)
@@ -362,6 +366,7 @@ object PlayerManager {
             val curIdx = list.indexOfFirst { it.id == cur.id || (it.title.equals(cur.title, true) && it.artist.equals(cur.artist, true)) }
             val next = if (curIdx != -1 && curIdx + 1 < list.size) list[curIdx + 1] else null
             if (next != null) {
+                if (next.streamUrl?.startsWith("file:") == true) return@launch
                 var vid = next.videoId
                 if (vid.isNullOrBlank()) {
                     val s = MusicApiService.searchSongs("${next.title} ${next.artist}")

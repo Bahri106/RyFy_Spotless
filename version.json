@@ -1,11 +1,13 @@
 {
-  "versionName": "1.0.17",
-  "versionCode": 18,
-  "publishedAt": "2026-10-25T18:00:00Z",
+  "versionName": "1.0.18",
+  "versionCode": 19,
+  "publishedAt": "2026-10-25T18:30:00Z",
   "changelog": [
-    "Fix Bug Aplikasi Dobel Saat Update (Auto-Deduplication): Mematikan komponen launcher duplikat secara otomatis saat app dibuka, memastikan hanya tepat 1 ikon RyFy di Layar Utama HP",
-    "Pembersihan Bersih Alias Lama: Mengisolasi activity-alias lama (LauncherNeon/Spotify) agar tidak pernah bentrok dengan MainActivity",
-    "Single Dex & Keystore Pinned: Tetap tepat 1 file classes.dex dan ukuran ramping ~4.4 MB"
+    "Fix Mesin Unduh Offline: Unduh andal bertenaga OkHttp dengan bypass Cloudflare WAF, multi-stream fallback, dan verifikasi integritas",
+    "Playback File Audio Lokal: ExoPlayer resmi mendukung pemutaran langsung lagu dari storage internal HP tanpa internet",
+    "Dukungan Auto-Fallback Stream: Beralih otomatis ke server cadangan jika jalur stream utama mengalami gangguan",
+    "Changelog Dinamis (1:1 Standar Rolleys): Teks dialog 'Yang Baru di RyFy' otomatis memuat metadata rilis dari version.json",
+    "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.4 MB dengan 1 classes.dex"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.17/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.18/app-release.apk"
 }
