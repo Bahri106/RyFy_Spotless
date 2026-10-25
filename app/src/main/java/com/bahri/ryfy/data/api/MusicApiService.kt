@@ -145,11 +145,30 @@ object MusicApiService {
 
     /**
      * Resolves playable audio stream URL from videoId using Invidious audio formats.
+     * Uses local=true proxy mode so streams bypass Google 403 Forbidden IP mismatch.
      */
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
         for (instance in INVIDIOUS_INSTANCES) {
+            // Strategy 1: Direct proxied latest_version endpoint
+            val directProxy = "$instance/latest_version?id=$videoId&itag=140&local=true"
             try {
-                val url = "$instance/api/v1/videos/$videoId"
+                val headReq = Request.Builder()
+                    .url(directProxy)
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) RyFy/1.0.2")
+                    .header("Range", "bytes=0-1024")
+                    .build()
+                client.newCall(headReq).execute().use { resp ->
+                    if (resp.isSuccessful || resp.code == 200 || resp.code == 206) {
+                        return@withContext directProxy
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Direct proxy check failed on $instance: ${e.message}")
+            }
+
+            // Strategy 2: API query with ?local=true for proxied adaptiveFormats
+            try {
+                val url = "$instance/api/v1/videos/$videoId?local=true"
                 val request = Request.Builder()
                     .url(url)
                     .header("User-Agent", "Mozilla/5.0")
@@ -169,10 +188,15 @@ object MusicApiService {
                             val type = f.optString("type", "")
                             if (type.startsWith("audio/")) {
                                 val bitrate = f.optInt("bitrate", 0)
-                                val streamUrl = f.optString("url", "")
-                                if (streamUrl.isNotBlank() && bitrate >= highestBitrate) {
-                                    highestBitrate = bitrate
-                                    bestUrl = streamUrl
+                                var streamUrl = f.optString("url", "")
+                                if (streamUrl.isNotBlank()) {
+                                    if (!streamUrl.startsWith("http")) {
+                                        streamUrl = "$instance$streamUrl"
+                                    }
+                                    if (bitrate >= highestBitrate) {
+                                        highestBitrate = bitrate
+                                        bestUrl = streamUrl
+                                    }
                                 }
                             }
                         }
@@ -180,7 +204,7 @@ object MusicApiService {
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Instance $instance failed: ${e.message}")
+                Log.w(TAG, "Instance $instance API query failed: ${e.message}")
             }
         }
         null

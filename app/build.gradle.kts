@@ -12,12 +12,12 @@ android {
         applicationId = "com.bahri.ryfy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
 
-        buildConfigField("String", "VERSION_NAME", "\"1.0.1\"")
-        buildConfigField("int", "VERSION_CODE", "2")
-        buildConfigField("String", "UPDATE_CHECK_URL", "\"https://raw.githubusercontent.com/Bahri106/RyFy-release-build/main/version.json\"")
+        buildConfigField("String", "VERSION_NAME", "\"1.0.2\"")
+        buildConfigField("int", "VERSION_CODE", "3")
+        buildConfigField("String", "UPDATE_CHECK_URL", "\"https://raw.githubusercontent.com/Bahri106/RyFy_Spotless/main/version.json\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

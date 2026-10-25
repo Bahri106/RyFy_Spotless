@@ -52,6 +52,10 @@ object PlayerManager {
                     playNext()
                 }
             }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                android.util.Log.e("PlayerManager", "Playback error: ${error.errorCodeName} - ${error.message}", error)
+            }
         })
         exoPlayer = player
     }
