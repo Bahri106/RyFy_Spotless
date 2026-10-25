@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 class UpdateManager(private val context: Context) {
     companion object {
         private const val TAG = "RyFyUpdateManager"
-        const val UPDATE_URL = "https://raw.githubusercontent.com/Bahri106/RyFy-release-build/main/version.json"
+        const val UPDATE_URL = "https://raw.githubusercontent.com/Bahri106/RyFy_Spotless/main/version.json"
     }
 
     private val scope = CoroutineScope(Dispatchers.IO)
