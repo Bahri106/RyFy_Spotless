@@ -153,6 +153,7 @@ val SAMPLE_TRACKS = INITIAL_RECOMMENDED_TRACKS
 
 @Composable
 fun HomeScreen() {
+    val recentTracks by com.bahri.ryfy.data.RecentlyPlayedManager.recentTracks.collectAsState()
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
@@ -268,6 +269,62 @@ fun HomeScreen() {
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) Color.Black else SpotifyText
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Section: Baru Saja Diputar (Recently Played 1:1 Spotify)
+        if (recentTracks.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Baru saja diputar",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = SpotifyText,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(recentTracks) { track ->
+                            Column(
+                                modifier = Modifier
+                                    .width(130.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { PlayerManager.playTrack(track, recentTracks) }
+                            ) {
+                                AsyncImage(
+                                    model = track.coverUrl,
+                                    contentDescription = track.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(130.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = track.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SpotifyText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = track.artist,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SpotifyTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }

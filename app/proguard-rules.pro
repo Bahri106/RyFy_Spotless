@@ -15,3 +15,7 @@
 -dontwarn androidx.media.**
 -keep class android.support.v4.media.** { *; }
 -dontwarn android.support.v4.media.**
+
+# ShortcutManager & IconCompat
+-keep class androidx.core.content.pm.** { *; }
+-keep class androidx.core.graphics.drawable.** { *; }

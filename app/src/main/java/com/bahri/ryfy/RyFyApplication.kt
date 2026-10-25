@@ -5,6 +5,7 @@ import com.bahri.ryfy.core.AppIconManager
 import com.bahri.ryfy.core.CrashHandler
 import com.bahri.ryfy.data.FavoritesManager
 import com.bahri.ryfy.data.PlaylistManager
+import com.bahri.ryfy.data.RecentlyPlayedManager
 import com.bahri.ryfy.playback.PlayerManager
 
 class RyFyApplication : Application() {
@@ -17,6 +18,7 @@ class RyFyApplication : Application() {
         runCatching { AppIconManager.init(this) }
         runCatching { FavoritesManager.init(this) }
         runCatching { PlaylistManager.init(this) }
+        runCatching { RecentlyPlayedManager.init(this) }
         runCatching { PlayerManager.init(this) }
     }
 }

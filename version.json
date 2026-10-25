@@ -1,13 +1,13 @@
 {
-  "versionName": "1.0.12",
-  "versionCode": 13,
-  "publishedAt": "2026-10-25T14:30:00Z",
+  "versionName": "1.0.13",
+  "versionCode": 14,
+  "publishedAt": "2026-10-25T15:10:00Z",
   "changelog": [
-    "RyFy Dedicated Fast-Stream Engine: Jalur streaming privat 1 Gbps (bahrixyz.my.id/api/stream), putar lagu secepat kilat (< 300 ms)",
-    "Eliminasi Total Captcha & Bot Challenge: Membuang server proxy luar negeri yang terblokir Cloudflare / Google bot challenge",
-    "Preload Cache RAM Otomatis: Lagu-lagu rekomendasi beranda otomatis di-preload di background sehingga saat diklik langsung berbunyi 0 ms",
-    "High-Speed Audio Seeking: Dukungan HTTP Range 206 asli Google audio/mp4 untuk geser timeline scrubber mulus tanpa lag",
-    "Lockscreen Media Player & Crash Logger: Semua fitur v1.0.11 tetap aktif optimal dengan single classes.dex"
+    "Fix Bug Durasi 03:30: Sinkronisasi durasi lagu nyata dari ExoPlayer secara real-time, tidak lagi mentok di 3 menit 30 detik",
+    "Seksi 'Baru saja diputar' di Beranda: Riwayat lagu yang baru saja Anda dengarkan otomatis muncul dan ter-refresh di baris teratas Beranda (Spotify 1:1)",
+    "Tentang RyFy Jadi Popup Dialog: Menu Pengaturan jauh lebih ringkas, membuka dialog popup berikon rapi dan lengkap",
+    "Tim Pengembang VIP BottomSheet (Opsi 1): Profil modern Saiful Bahri (Founder) dan Diki Dev (Co-Founder) dengan tombol aksi Telegram & GitHub",
+    "Custom Ikon Aplikasi dari Galeri: Bebas memilih foto apa pun dari galeri HP Anda untuk dijadikan ikon RyFy di Layar Utama"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.12/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.13/app-release.apk"
 }

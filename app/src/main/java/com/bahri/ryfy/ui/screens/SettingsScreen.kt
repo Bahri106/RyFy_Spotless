@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,14 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -55,11 +51,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bahri.ryfy.BuildConfig
 import com.bahri.ryfy.R
 import com.bahri.ryfy.core.AppIconManager
+import com.bahri.ryfy.ui.dialogs.AboutRyFyDialog
 import com.bahri.ryfy.ui.dialogs.AppIconDialog
+import com.bahri.ryfy.ui.dialogs.DeveloperBottomSheet
 import com.bahri.ryfy.ui.theme.SpotifyElevated
 import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
@@ -75,17 +72,8 @@ fun SettingsScreen(updateManager: UpdateManager) {
     val updateState by updateManager.state.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showAppIconDialog by remember { mutableStateOf(false) }
-
-    fun openUrl(url: String) {
-        runCatching {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        }.onFailure {
-            Toast.makeText(context, "Tidak dapat membuka tautan", Toast.LENGTH_SHORT).show()
-        }
-    }
+    var showDeveloperSheet by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -103,7 +91,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
                 )
             }
 
-            // 1. Developer & Founder Card (About Developer)
+            // 1. Sleek Interactive Developer & About Section (Opsi 1)
             item {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -112,239 +100,32 @@ fun SettingsScreen(updateManager: UpdateManager) {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(CircleShape)
-                                    .background(SpotifyGreen.copy(alpha = 0.2f))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = SpotifyGreen,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
+                    Column {
+                        SettingsItemRow(
+                            icon = Icons.Default.People,
+                            title = "Tim Pengembang & Komunitas",
+                            subtitle = "Saiful Bahri (Founder) · Diki Dev (Co-Founder)",
+                            highlight = true,
+                            onClick = { showDeveloperSheet = true }
+                        )
 
-                            Spacer(modifier = Modifier.width(14.dp))
+                        HorizontalDivider(
+                            color = SpotifyHighlight,
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Saiful Bahri",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SpotifyText
-                                )
-                                Text(
-                                    text = "Pemilik & Pendiri Tunggal",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SpotifyGreen,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp)
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Telegram Channel Link
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { openUrl("https://t.me/ryfyProject") }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = null,
-                                tint = SpotifyGreen,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Channel Update Aplikasi",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = SpotifyText
-                                )
-                                Text(
-                                    text = "https://t.me/ryfyProject",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SpotifyTextSecondary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                tint = SpotifyTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        // Telegram Owner Link
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { openUrl("https://t.me/Gus_tazdo") }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = SpotifyGreen,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Kontak Telegram Pemilik",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = SpotifyText
-                                )
-                                Text(
-                                    text = "@Gus_tazdo (Saiful Bahri)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SpotifyTextSecondary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                tint = SpotifyTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        // GitHub Founder Link
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { openUrl("https://github.com/Bahri106") }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Code,
-                                contentDescription = null,
-                                tint = SpotifyGreen,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "GitHub Founder (Saiful Bahri)",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = SpotifyText
-                                )
-                                Text(
-                                    text = "github.com/Bahri106",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SpotifyTextSecondary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                tint = SpotifyTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        // GitHub Co-Founder & Contributor (Diki Dev)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { openUrl("https://github.com/Towartz") }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Code,
-                                contentDescription = null,
-                                tint = SpotifyGreen,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Co-Founder & Contributor (Diki Dev)",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = SpotifyText
-                                )
-                                Text(
-                                    text = "github.com/Towartz",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = SpotifyTextSecondary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                tint = SpotifyTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 2. Info Aplikasi Card (Tentang RyFy Spotless & Fitur Bebas Iklan)
-            item {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = SpotifyElevated,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = SpotifyGreen,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Tentang RyFy Spotless",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = SpotifyText
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = "RyFy Spotless adalah pemutar musik mandiri hasil adaptasi 1:1 antarmuka Spotify resmi (Dark Mode, tipografi Spotify Mix UI, bar tembus pandang, dan Smart Shuffle).\n\n" +
-                                    "• 100% Bebas Iklan: Tanpa jeda audio sponsor dan tanpa iklan visual.\n" +
-                                    "• Unlimited On-Demand: Bebas pilih lagu apa pun dan lompat lagu tanpa batas.\n" +
-                                    "• Zero-Login: Berjalan privat dalam mode tamu tanpa login akun Google/pihak ketiga, aman dari blokir.\n" +
-                                    "• Audio Kualitas Tinggi: Streaming jernih 256 kbps dengan lirik tersinkronisasi real-time via LRCLIB.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SpotifyTextSecondary,
-                            lineHeight = 18.sp
+                        SettingsItemRow(
+                            icon = Icons.Default.Info,
+                            title = "Tentang RyFy Spotless",
+                            subtitle = "Informasi aplikasi, fitur bebas iklan & privasi",
+                            onClick = { showAboutDialog = true }
                         )
                     }
                 }
             }
 
-            // 3. Settings Category Section
+            // 2. Settings Category Section
             item {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -357,9 +138,9 @@ fun SettingsScreen(updateManager: UpdateManager) {
                         SettingsItemRow(
                             icon = Icons.Default.GraphicEq,
                             title = "Kualitas Audio Streaming",
-                            subtitle = "Sangat Tinggi (256 kbps Opus / Bebas Batas)",
+                            subtitle = "Sangat Tinggi (256 kbps Opus / 1 Gbps Fast-Stream)",
                             onClick = {
-                                Toast.makeText(context, "Kualitas audio diatur ke Maksimal (Lossless/High)", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Kualitas audio diatur ke Maksimal (1 Gbps Fast-Stream)", Toast.LENGTH_SHORT).show()
                             }
                         )
 
@@ -368,9 +149,9 @@ fun SettingsScreen(updateManager: UpdateManager) {
                         SettingsItemRow(
                             icon = Icons.Default.Security,
                             title = "Proteksi & Privasi",
-                            subtitle = "Tanpa pelacak, tanpa akun pihak ketiga",
+                            subtitle = "Tanpa pelacak, mode tamu zero-login aman",
                             onClick = {
-                                Toast.makeText(context, "Privasi offline aktif", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Proteksi privasi offline aktif", Toast.LENGTH_SHORT).show()
                             }
                         )
 
@@ -437,6 +218,16 @@ fun SettingsScreen(updateManager: UpdateManager) {
                     .clip(CircleShape)
             )
         }
+    }
+
+    // Tim Pengembang & Komunitas BottomSheet
+    if (showDeveloperSheet) {
+        DeveloperBottomSheet(onDismiss = { showDeveloperSheet = false })
+    }
+
+    // Tentang RyFy Popup Dialog
+    if (showAboutDialog) {
+        AboutRyFyDialog(onDismiss = { showAboutDialog = false })
     }
 
     // App Icon Customizer Dialog

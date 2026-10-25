@@ -152,7 +152,12 @@ object PlayerManager {
             }
 
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) {
+                if (state == Player.STATE_READY) {
+                    val realDuration = player.duration
+                    if (realDuration > 0 && _currentTrack.value != null && _currentTrack.value?.durationMs != realDuration) {
+                        _currentTrack.value = _currentTrack.value?.copy(durationMs = realDuration)
+                    }
+                } else if (state == Player.STATE_ENDED) {
                     playNext()
                 }
             }
@@ -224,6 +229,7 @@ object PlayerManager {
         _currentPositionMs.value = 0L
         _isPlaying.value = false
         _currentTrack.value = track
+        com.bahri.ryfy.data.RecentlyPlayedManager.addTrack(track)
 
         // 3. Manage Queue
         if (newQueue != null && newQueue.isNotEmpty()) {
@@ -463,6 +469,10 @@ object PlayerManager {
             while (isActive) {
                 exoPlayer?.let { player ->
                     _currentPositionMs.value = player.currentPosition
+                    val realDuration = player.duration
+                    if (realDuration > 0 && _currentTrack.value != null && _currentTrack.value?.durationMs != realDuration) {
+                        _currentTrack.value = _currentTrack.value?.copy(durationMs = realDuration)
+                    }
                 }
                 delay(500)
             }
