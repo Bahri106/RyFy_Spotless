@@ -407,7 +407,7 @@ fun NowPlayingDialog(
                 val previewLines = if (cleanLyrics.isNotBlank()) {
                     cleanLyrics.lines().take(4).joinToString("\n")
                 } else {
-                    "Lirik sedang disinkronkan dari LRCLIB..."
+                    "Menyiapkan lirik lagu..."
                 }
 
                 Surface(

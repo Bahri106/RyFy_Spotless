@@ -22,6 +22,7 @@ object MusicApiService {
         .build()
 
     private val DEDICATED_STREAM_HOST = "https://bahrixyz.my.id/api/stream"
+    private val DEDICATED_LYRICS_HOST = "https://bahrixyz.my.id/api/lyrics"
     private val FALLBACK_STREAM_HOST = "https://yt.chocolatemoo53.com/latest_version"
 
     fun upgradeThumbnail(url: String): String {
@@ -259,20 +260,45 @@ object MusicApiService {
     }
 
     /**
-     * Fetch real-time synchronized lyrics from LRCLIB open-source API.
+     * Fetch real-time synchronized lyrics via VPS dual-engine proxy (LRCLIB + Botcahx Genius fallback),
+     * with direct LRCLIB fallback if server is unreachable.
      */
     suspend fun fetchLyrics(title: String, artist: String): String? = withContext(Dispatchers.IO) {
+        if (title.isBlank()) return@withContext null
         try {
             val encTitle = URLEncoder.encode(title, "UTF-8")
             val encArtist = URLEncoder.encode(artist, "UTF-8")
-            val url = "https://lrclib.net/api/get?track_name=$encTitle&artist_name=$encArtist"
 
-            val request = Request.Builder()
-                .url(url)
+            // 1. Primary: Dedicated VPS Lyrics Engine (Cached, LRCLIB Synced + Botcahx Genius Fallback)
+            val vpsUrl = "$DEDICATED_LYRICS_HOST?q=$encTitle&artist=$encArtist"
+            val vpsRequest = Request.Builder()
+                .url(vpsUrl)
                 .header("User-Agent", "RyFy-Spotless-App")
                 .build()
 
-            client.newCall(request).execute().use { response ->
+            val vpsResult = runCatching {
+                client.newCall(vpsRequest).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body?.string() ?: return@use null
+                        val json = JSONObject(body)
+                        val lrc = json.optString("lyrics")
+                        if (lrc.isNotBlank()) lrc else null
+                    } else null
+                }
+            }.getOrNull()
+
+            if (!vpsResult.isNullOrBlank()) {
+                return@withContext vpsResult
+            }
+
+            // 2. Direct Fallback: Direct LRCLIB open-source API if VPS proxy is unreachable
+            val lrclibUrl = "https://lrclib.net/api/get?track_name=$encTitle&artist_name=$encArtist"
+            val lrclibRequest = Request.Builder()
+                .url(lrclibUrl)
+                .header("User-Agent", "RyFy-Spotless-App")
+                .build()
+
+            client.newCall(lrclibRequest).execute().use { response ->
                 if (!response.isSuccessful) return@withContext null
                 val body = response.body?.string() ?: return@withContext null
                 val json = JSONObject(body)

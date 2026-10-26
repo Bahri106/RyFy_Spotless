@@ -1,13 +1,13 @@
 {
-  "versionName": "1.0.18",
-  "versionCode": 19,
-  "publishedAt": "2026-10-25T18:30:00Z",
+  "versionName": "1.0.19",
+  "versionCode": 20,
+  "publishedAt": "2026-10-26T04:35:00Z",
   "changelog": [
-    "Fix Mesin Unduh Offline: Unduh andal bertenaga OkHttp dengan bypass Cloudflare WAF, multi-stream fallback, dan verifikasi integritas",
-    "Playback File Audio Lokal: ExoPlayer resmi mendukung pemutaran langsung lagu dari storage internal HP tanpa internet",
-    "Dukungan Auto-Fallback Stream: Beralih otomatis ke server cadangan jika jalur stream utama mengalami gangguan",
-    "Changelog Dinamis (1:1 Standar Rolleys): Teks dialog 'Yang Baru di RyFy' otomatis memuat metadata rilis dari version.json",
-    "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.4 MB dengan 1 classes.dex"
+    "Mesin Lirik Hybrid Cerdas: Integrasi dual-engine LRCLIB (Lirik Karaoke Sinkron) + Botcahx Genius (Database Lirik Terlengkap) via proxy cache VPS",
+    "Zero-Wait Cache Lirik: Lirik yang pernah dimuat disimpan di cache server untuk akses instan <10ms tanpa kuota",
+    "Auto-Fallback Lirik: Menghilangkan error lirik kosong pada lagu lokal, dangdut, indie, dan cover",
+    "Fix Mesin Unduh Offline: Unduh andal bertenaga OkHttp dengan bypass Cloudflare WAF dan pemutaran lokal file://",
+    "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.3 MB"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.18/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.19/app-release.apk"
 }
