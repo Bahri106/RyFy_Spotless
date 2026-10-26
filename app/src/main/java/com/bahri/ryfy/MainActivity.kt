@@ -40,8 +40,14 @@ import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.data.FavoritesManager
 import com.bahri.ryfy.playback.PlayerManager
 import com.bahri.ryfy.playback.RyFyNotificationManager
+import com.bahri.ryfy.ui.components.LiquidGlassBottomBar
 import com.bahri.ryfy.ui.components.MiniPlayer
 import com.bahri.ryfy.ui.components.NowPlayingDialog
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import com.bahri.ryfy.ui.dialogs.WhatsNewDialog
 import com.bahri.ryfy.ui.dialogs.WhatsNewHelper
 import com.bahri.ryfy.ui.screens.HomeScreen
@@ -125,11 +131,19 @@ fun MainApp(updateManager: UpdateManager) {
     ) {
         // Full screen content layer (Content scrolls freely behind translucent bottom bar)
         Box(modifier = Modifier.fillMaxSize()) {
-            when (selectedTab) {
-                RyFyTab.HOME -> HomeScreen()
-                RyFyTab.SEARCH -> SearchScreen()
-                RyFyTab.LIBRARY -> LibraryScreen()
-                RyFyTab.SETTINGS -> SettingsScreen(updateManager = updateManager)
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    fadeIn(tween(220)) togetherWith fadeOut(tween(180))
+                },
+                label = "tab_content_transition"
+            ) { tab ->
+                when (tab) {
+                    RyFyTab.HOME -> HomeScreen()
+                    RyFyTab.SEARCH -> SearchScreen()
+                    RyFyTab.LIBRARY -> LibraryScreen()
+                    RyFyTab.SETTINGS -> SettingsScreen(updateManager = updateManager)
+                }
             }
         }
 
@@ -138,17 +152,8 @@ fun MainApp(updateManager: UpdateManager) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color(0x99121212),
-                            Color(0xE6121212),
-                            Color(0xFC121212)
-                        )
-                    )
-                )
                 .navigationBarsPadding()
+                .padding(bottom = 6.dp)
         ) {
             // Persistent Floating Mini Player
             currentTrack?.let { track ->
@@ -167,45 +172,11 @@ fun MainApp(updateManager: UpdateManager) {
                 )
             }
 
-            // Spotify Bottom Navigation Bar (Translucent glass effect)
-            NavigationBar(
-                containerColor = Color.Transparent,
-                contentColor = SpotifyTextSecondary,
-                tonalElevation = 0.dp
-            ) {
-                RyFyTab.entries.forEach { tab ->
-                    val isSelected = selectedTab == tab
-                    val tabLabel = when (tab) {
-                        RyFyTab.HOME -> RyFyStrings.get(RyFyStrings.Key.NAV_HOME)
-                        RyFyTab.SEARCH -> RyFyStrings.get(RyFyStrings.Key.NAV_SEARCH)
-                        RyFyTab.LIBRARY -> RyFyStrings.get(RyFyStrings.Key.NAV_LIBRARY)
-                        RyFyTab.SETTINGS -> RyFyStrings.get(RyFyStrings.Key.NAV_SETTINGS)
-                    }
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { selectedTab = tab },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tabLabel
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = tabLabel,
-                                style = androidx.compose.material3.MaterialTheme.typography.labelSmall
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = SpotifyText,
-                            selectedTextColor = SpotifyText,
-                            unselectedIconColor = SpotifyTextSecondary,
-                            unselectedTextColor = SpotifyTextSecondary,
-                            indicatorColor = Color.Transparent
-                        )
-                    )
-                }
-            }
+            // Liquid Glass Bottom Navigation Bar
+            LiquidGlassBottomBar(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
         }
     }
 

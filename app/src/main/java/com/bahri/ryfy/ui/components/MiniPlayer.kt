@@ -38,6 +38,9 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun MiniPlayer(
@@ -53,13 +56,16 @@ fun MiniPlayer(
         (progressMs.toFloat() / track.durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
 
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = SpotifyElevated,
-        shadowElevation = 10.dp,
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .liquidGlass(
+                shape = RoundedCornerShape(16.dp),
+                backgroundColor = Color(0xD9181818),
+                borderWidth = 1.dp,
+                borderBrush = GlassBorderBrush
+            )
             .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

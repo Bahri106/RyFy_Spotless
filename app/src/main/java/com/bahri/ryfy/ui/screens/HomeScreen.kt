@@ -59,6 +59,8 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
 import java.util.Calendar
 
 data class ArtistMix(
@@ -265,8 +267,12 @@ fun HomeScreen() {
                         val isSelected = selectedFilterIndex == index
                         Box(
                             modifier = Modifier
-                                .clip(CircleShape)
-                                .background(if (isSelected) SpotifyGreen else SpotifyElevated)
+                                .liquidGlass(
+                                    shape = CircleShape,
+                                    backgroundColor = if (isSelected) SpotifyGreen else Color(0x66222222),
+                                    borderWidth = if (isSelected) 0.dp else 1.dp,
+                                    borderBrush = GlassBorderBrush
+                                )
                                 .clickable { selectedFilterIndex = index }
                                 .padding(horizontal = 16.dp, vertical = 7.dp)
                         ) {
@@ -503,11 +509,15 @@ private fun MixCard(
     mix: ArtistMix,
     onClick: () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = SpotifyElevated,
+    Box(
         modifier = Modifier
             .width(152.dp)
+            .liquidGlass(
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = Color(0xB31C1C1C),
+                borderWidth = 1.dp,
+                borderBrush = GlassBorderBrush
+            )
             .clickable(onClick = onClick)
     ) {
         Column {

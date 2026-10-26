@@ -28,6 +28,9 @@ import com.bahri.ryfy.ui.theme.SpotifyElevated
 import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SleepTimerDialog(onDismiss: () -> Unit) {
@@ -53,7 +56,9 @@ fun SleepTimerDialog(onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = SpotifyElevated,
+        containerColor = Color(0xF21C1C1C),
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.border(1.dp, GlassBorderBrush, RoundedCornerShape(24.dp)),
         title = {
             Column {
                 Text(

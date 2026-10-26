@@ -67,6 +67,9 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
+import androidx.compose.ui.graphics.Color
 import com.bahri.ryfy.update.UpdateDialog
 import com.bahri.ryfy.update.UpdateManager
 import com.bahri.ryfy.update.UpdateState
@@ -103,12 +106,16 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
             // 1. Sleek Interactive Developer & About Section (Opsi 1)
             item {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = SpotifyElevated,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
+                        .liquidGlass(
+                            shape = RoundedCornerShape(16.dp),
+                            backgroundColor = Color(0x991E1E1E),
+                            borderWidth = 1.dp,
+                            borderBrush = GlassBorderBrush
+                        )
                 ) {
                     Column {
                         SettingsItemRow(
@@ -120,7 +127,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
                         )
 
                         HorizontalDivider(
-                            color = SpotifyHighlight,
+                            color = Color.White.copy(alpha = 0.08f),
                             thickness = 0.5.dp,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
@@ -137,12 +144,16 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
             // 2. Settings Category Section
             item {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = SpotifyElevated,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
+                        .liquidGlass(
+                            shape = RoundedCornerShape(16.dp),
+                            backgroundColor = Color(0x991E1E1E),
+                            borderWidth = 1.dp,
+                            borderBrush = GlassBorderBrush
+                        )
                 ) {
                     Column {
                         SettingsItemRow(

@@ -80,6 +80,9 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,10 +149,10 @@ fun LibraryScreen() {
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = SpotifyGreen,
                                 selectedLabelColor = Color.Black,
-                                containerColor = SpotifyElevated,
+                                containerColor = Color(0x66242424),
                                 labelColor = SpotifyText
                             ),
-                            border = null,
+                            border = if (isSelected) null else BorderStroke(1.dp, GlassBorderBrush),
                             shape = CircleShape
                         )
                     }

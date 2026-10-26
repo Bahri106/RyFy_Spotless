@@ -65,6 +65,8 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
 import kotlinx.coroutines.delay
 
 val GENRE_CATEGORIES = listOf(
@@ -121,32 +123,36 @@ fun SearchScreen() {
         )
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Spotify Search Bar Input (White Card)
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = Color.White,
+        // Liquid Glass Search Bar Input
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(50.dp)
+                .liquidGlass(
+                    shape = RoundedCornerShape(25.dp),
+                    backgroundColor = Color(0x2EFFFFFF),
+                    borderWidth = 1.dp,
+                    borderBrush = GlassBorderBrush
+                )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 14.dp)
+                    .padding(horizontal = 16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = Color(0xFF121212),
-                    modifier = Modifier.size(24.dp)
+                    tint = SpotifyText,
+                    modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (searchQuery.isEmpty()) {
                         Text(
                             text = RyFyStrings.get(RyFyStrings.Key.SEARCH_PLACEHOLDER),
-                            color = Color(0xFF747474),
+                            color = Color(0xFFB0B0B0),
                             fontSize = 14.sp
                         )
                     }
@@ -155,10 +161,10 @@ fun SearchScreen() {
                         onValueChange = { searchQuery = it },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = Color(0xFF121212),
+                            color = SpotifyText,
                             fontSize = 14.5.sp
                         ),
-                        cursorBrush = SolidColor(SpotifyDark),
+                        cursorBrush = SolidColor(SpotifyGreenBright),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -166,7 +172,7 @@ fun SearchScreen() {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = Color(0xFF121212)
+                        color = SpotifyGreen
                     )
                 } else if (searchQuery.isNotEmpty()) {
                     IconButton(
@@ -180,7 +186,7 @@ fun SearchScreen() {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Clear",
-                            tint = Color(0xFF121212),
+                            tint = SpotifyText,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -486,12 +492,16 @@ private fun SearchResultRow(
 
 @Composable
 private fun GenreCard(genre: GenreCategory, onSelect: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = Color(genre.colorHex),
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(96.dp)
+            .liquidGlass(
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = Color(genre.colorHex).copy(alpha = 0.88f),
+                borderWidth = 1.dp,
+                borderBrush = GlassBorderBrush
+            )
             .clickable(onClick = onSelect)
     ) {
         Box(

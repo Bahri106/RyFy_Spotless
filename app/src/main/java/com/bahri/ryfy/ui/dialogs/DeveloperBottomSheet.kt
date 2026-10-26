@@ -67,7 +67,7 @@ fun DeveloperBottomSheet(onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF161616),
+        containerColor = Color(0xF2161616),
         contentColor = SpotifyText
     ) {
         Column(

@@ -102,6 +102,8 @@ import com.bahri.ryfy.ui.theme.SpotifyGreen
 import com.bahri.ryfy.ui.theme.SpotifyHighlight
 import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
+import com.bahri.ryfy.ui.theme.GlassBorderBrush
+import com.bahri.ryfy.ui.theme.liquidGlass
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -329,9 +331,17 @@ fun NowPlayingDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Controls (Shuffle/Smart Shuffle, Prev, Play/Pause, Next, Repeat)
+                // Controls Dock (Liquid Glass Floating Capsule)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .liquidGlass(
+                            shape = RoundedCornerShape(36.dp),
+                            backgroundColor = Color(0x66181818),
+                            borderWidth = 1.dp,
+                            borderBrush = GlassBorderBrush
+                        )
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -421,13 +431,16 @@ fun NowPlayingDialog(
                     "Menyiapkan lirik lagu..."
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = SpotifyElevated,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .liquidGlass(
+                            shape = RoundedCornerShape(18.dp),
+                            backgroundColor = Color(0x991E1E1E),
+                            borderWidth = 1.dp,
+                            borderBrush = GlassBorderBrush
+                        )
                         .clickable { showFullscreenLyrics = true }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -1113,7 +1126,7 @@ fun NowPlayingDialog(
                 ModalBottomSheet(
                     onDismissRequest = { showFullscreenLyrics = false },
                     sheetState = lyricsSheet,
-                    containerColor = Color(0xFF141414),
+                    containerColor = Color(0xF2141414),
                     contentColor = SpotifyText
                 ) {
                     Column(
