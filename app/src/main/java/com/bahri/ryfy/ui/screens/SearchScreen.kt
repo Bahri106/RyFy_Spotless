@@ -164,7 +164,7 @@ fun SearchScreen() {
                             color = SpotifyText,
                             fontSize = 14.5.sp
                         ),
-                        cursorBrush = SolidColor(SpotifyGreenBright),
+                        cursorBrush = SolidColor(SpotifyGreen),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

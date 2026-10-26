@@ -30,6 +30,7 @@ import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
 import com.bahri.ryfy.ui.theme.GlassBorderBrush
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 
 @Composable

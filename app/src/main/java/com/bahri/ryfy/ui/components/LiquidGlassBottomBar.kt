@@ -23,13 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bahri.ryfy.MainActivity.RyFyTab
+import com.bahri.ryfy.RyFyTab
 import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.ui.theme.GlassBaseColor
 import com.bahri.ryfy.ui.theme.GlassBorderActiveBrush
@@ -67,7 +66,7 @@ fun LiquidGlassBottomBar(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RyFyTab.entries.forEach { tab ->
+            RyFyTab.values().forEach { tab ->
                 val isSelected = selectedTab == tab
                 val tabLabel = when (tab) {
                     RyFyTab.HOME -> RyFyStrings.get(RyFyStrings.Key.NAV_HOME)

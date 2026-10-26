@@ -69,7 +69,6 @@ import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
 import com.bahri.ryfy.ui.theme.GlassBorderBrush
 import com.bahri.ryfy.ui.theme.liquidGlass
-import androidx.compose.ui.graphics.Color
 import com.bahri.ryfy.update.UpdateDialog
 import com.bahri.ryfy.update.UpdateManager
 import com.bahri.ryfy.update.UpdateState
