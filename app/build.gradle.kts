@@ -4,6 +4,14 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val versionFile = rootProject.file("version.json")
+val versionMap = if (versionFile.exists()) {
+    groovy.json.JsonSlurper().parseText(versionFile.readText()) as? Map<*, *>
+} else null
+
+val appVersionName = (versionMap?.get("versionName") as? String) ?: "1.0.19"
+val appVersionCode = (versionMap?.get("versionCode") as? Number)?.toInt() ?: 20
+
 android {
     namespace = "com.bahri.ryfy"
     compileSdk = 35
@@ -12,11 +20,11 @@ android {
         applicationId = "com.bahri.ryfy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "1.0.18"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
-        buildConfigField("String", "VERSION_NAME", "\"1.0.18\"")
-        buildConfigField("int", "VERSION_CODE", "19")
+        buildConfigField("String", "VERSION_NAME", "\"$appVersionName\"")
+        buildConfigField("int", "VERSION_CODE", "$appVersionCode")
         buildConfigField("String", "UPDATE_CHECK_URL", "\"https://raw.githubusercontent.com/Bahri106/RyFy_Spotless/main/version.json\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
