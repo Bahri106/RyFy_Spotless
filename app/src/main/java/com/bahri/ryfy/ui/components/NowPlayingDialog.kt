@@ -402,10 +402,21 @@ fun NowPlayingDialog(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Lyrics Preview Box (Spotify Style)
+                // Lyrics Preview Box (Spotify Style with Realtime Auto-Sync)
                 val cleanLyrics = cleanLyricsText(track.lyrics)
-                val previewLines = if (cleanLyrics.isNotBlank()) {
-                    cleanLyrics.lines().take(4).joinToString("\n")
+                val parsedLinesForPreview = remember(track.lyrics) { parseLrcLyrics(track.lyrics) }
+                val currentLineIdx = remember(parsedLinesForPreview, progressMs) {
+                    if (parsedLinesForPreview.isEmpty() || parsedLinesForPreview.none { it.timeMs >= 0 }) -1
+                    else parsedLinesForPreview.indexOfLast { it.timeMs <= progressMs }
+                }
+                val previewLines = if (parsedLinesForPreview.isNotEmpty()) {
+                    if (currentLineIdx >= 0) {
+                        parsedLinesForPreview.drop(currentLineIdx).take(3).joinToString("\n") { it.text }
+                    } else {
+                        parsedLinesForPreview.take(3).joinToString("\n") { it.text }
+                    }
+                } else if (cleanLyrics.isNotBlank()) {
+                    cleanLyrics.lines().take(3).joinToString("\n")
                 } else {
                     "Menyiapkan lirik lagu..."
                 }

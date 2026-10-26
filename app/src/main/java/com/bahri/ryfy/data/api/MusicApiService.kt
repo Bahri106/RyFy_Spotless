@@ -25,6 +25,18 @@ object MusicApiService {
     private val DEDICATED_LYRICS_HOST = "https://bahrixyz.my.id/api/lyrics"
     private val FALLBACK_STREAM_HOST = "https://yt.chocolatemoo53.com/latest_version"
 
+    private val CATEGORY_LABELS = setOf("lagu", "video", "song", "artis", "artist", "album", "single", "ep", "playlist", "audio")
+
+    private fun isArtistText(text: String): Boolean {
+        val clean = text.trim()
+        if (clean.isBlank() || clean == "•" || clean == "• ") return false
+        val lower = clean.lowercase()
+        if (lower in CATEGORY_LABELS) return false
+        if (lower.contains("ditonton") || lower.contains("views") || lower.contains("x ditonton")) return false
+        if (clean.matches(Regex("""\d+[:.]\d+"""))) return false
+        return true
+    }
+
     fun upgradeThumbnail(url: String): String {
         if (url.isBlank()) return url
         return url
@@ -95,8 +107,8 @@ object MusicApiService {
                         if (subRuns != null && subRuns.length() > 0) {
                             for (r in 0 until subRuns.length()) {
                                 val t = subRuns.optJSONObject(r)?.optString("text") ?: ""
-                                if (t.isNotBlank() && t != " • " && !t.contains("Lagu") && !t.contains("Artis")) {
-                                    artist = t
+                                if (isArtistText(t)) {
+                                    artist = t.trim()
                                     break
                                 }
                             }
@@ -174,18 +186,16 @@ object MusicApiService {
                                 ?.optJSONObject("text")
                                 ?.optJSONArray("runs")
 
-                            val artistBuilder = StringBuilder()
+                            var artist = "Artis"
                             if (artistRuns != null) {
                                 for (j in 0 until artistRuns.length()) {
-                                    val t = artistRuns.optJSONObject(j)?.optString("text")
-                                    if (!t.isNullOrBlank() && t != " • ") {
-                                        if (artistBuilder.isNotEmpty()) artistBuilder.append(", ")
-                                        artistBuilder.append(t)
+                                    val t = artistRuns.optJSONObject(j)?.optString("text") ?: ""
+                                    if (isArtistText(t)) {
+                                        artist = t.trim()
                                         break
                                     }
                                 }
                             }
-                            val artist = if (artistBuilder.isNotEmpty()) artistBuilder.toString() else "Artis"
 
                             var videoId = item.optJSONObject("playlistItemData")?.optString("videoId") ?: ""
                             if (videoId.isBlank()) {
@@ -266,8 +276,10 @@ object MusicApiService {
     suspend fun fetchLyrics(title: String, artist: String): String? = withContext(Dispatchers.IO) {
         if (title.isBlank()) return@withContext null
         try {
-            val encTitle = URLEncoder.encode(title, "UTF-8")
-            val encArtist = URLEncoder.encode(artist, "UTF-8")
+            val cleanTitle = title.replace(Regex("""[\(\[\{].*?[\)\]\}]"""), "").trim().ifBlank { title }
+            val cleanArtist = if (artist.lowercase() in CATEGORY_LABELS) "" else artist.trim()
+            val encTitle = URLEncoder.encode(cleanTitle, "UTF-8")
+            val encArtist = URLEncoder.encode(cleanArtist, "UTF-8")
 
             // 1. Primary: Dedicated VPS Lyrics Engine (Cached, LRCLIB Synced + Botcahx Genius Fallback)
             val vpsUrl = "$DEDICATED_LYRICS_HOST?q=$encTitle&artist=$encArtist"
