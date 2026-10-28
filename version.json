@@ -1,14 +1,15 @@
 {
-  "versionName": "1.0.21",
-  "versionCode": 22,
-  "publishedAt": "2026-10-26T12:00:00Z",
+  "versionName": "1.0.22",
+  "versionCode": 23,
+  "publishedAt": "2026-10-28T18:00:00Z",
   "changelog": [
-    "Full Liquid Glass Overhaul: Seluruh antarmuka aplikasi berbalut desain Liquid Glass (Glassmorphism & Frosted Acrylic)",
-    "Floating Island Bottom Navigation Bar: Bar navigasi melayang berbentuk kapsul kaca dengan animasi pegas Liquid Pill hijau Spotify",
-    "Liquid Glass Mini Player: Pemutar mengambang dengan border specular rim kaca dan liquid progress scrubber",
-    "Glassmorphic Search Bar, Cards & Modals: Kotak pencarian kaca, ubin genre berkilau, dan modal sheet frosted acrylic",
-    "Smooth Page Transitions: Animasi pergantian tab 120Hz mulus tanpa jeda",
-    "Single Classes.dex & R8 Minified: Ukuran APK tetap ultra-ramping ~4.3 MB"
+    "iOS Glass Card Now Playing: Tampilan pemutar bergaya Apple Lock Screen / Control Center dengan border specular rim kaca",
+    "Realtime Animated Soundwave Equalizer: Animasi 4-bar equalizer dinamis di samping judul lagu saat musik diputar",
+    "iOS Progress Timeline & Countdown: Scrub bar presisi dengan format durasi elapsed dan waktu sisa mundur (-MM:SS)",
+    "Kontrol Pemutar Lengkap: Tombol bintang favorit, Prev, Play/Pause solid, Next, Lirik cepat, Shuffle pintar, Repeat, Speed, Timer, dan Download offline",
+    "Integrated Media Volume Slider: Pengatur volume audio langsung di dalam kartu pemutar",
+    "Audio Output Selector (AirPlay Style): Tombol kapsul pemilih rute audio aktif (Speaker Ponsel, Bluetooth TWS, Headset)",
+    "Instant Player Style Switcher: Tombol pengalih cepat seketika antara iOS Glass Card dan Spotify Klasik di pemutar dan Pengaturan"
   ],
-  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.21/app-release.apk"
+  "downloadUrl": "https://github.com/Bahri106/RyFy_Spotless/releases/download/v1.0.22/app-release.apk"
 }

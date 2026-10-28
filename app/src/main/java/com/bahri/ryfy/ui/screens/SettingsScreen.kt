@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -56,6 +57,7 @@ import com.bahri.ryfy.BuildConfig
 import com.bahri.ryfy.R
 import com.bahri.ryfy.core.AppIconManager
 import com.bahri.ryfy.core.AppLanguageManager
+import com.bahri.ryfy.core.PlayerStyleManager
 import com.bahri.ryfy.core.RyFyStrings
 import com.bahri.ryfy.ui.dialogs.AboutRyFyDialog
 import com.bahri.ryfy.ui.dialogs.AppIconDialog
@@ -86,6 +88,7 @@ fun SettingsScreen(updateManager: UpdateManager) {
 
     val currentLangCode by AppLanguageManager.currentLanguage.collectAsState()
     val currentLangLabel = AppLanguageManager.supportedLanguages.firstOrNull { it.code.equals(currentLangCode, true) }?.nativeName ?: "Default Sistem"
+    val currentPlayerStyle by PlayerStyleManager.currentStyle.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -155,6 +158,18 @@ fun SettingsScreen(updateManager: UpdateManager) {
                         )
                 ) {
                     Column {
+                        SettingsItemRow(
+                            icon = Icons.Default.Palette,
+                            title = "Gaya Tampilan Pemutar",
+                            subtitle = currentPlayerStyle.displayName,
+                            onClick = {
+                                val next = PlayerStyleManager.toggleStyle(context)
+                                Toast.makeText(context, "Gaya Pemutar: ${next.displayName}", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+
+                        HorizontalDivider(color = SpotifyHighlight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+
                         SettingsItemRow(
                             icon = Icons.Default.GraphicEq,
                             title = RyFyStrings.get(RyFyStrings.Key.EQUALIZER_TITLE),

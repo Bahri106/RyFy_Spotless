@@ -16,3 +16,4 @@
 *.aab
 /app/build
 target/
+.kotlin/

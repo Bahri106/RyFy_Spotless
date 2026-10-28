@@ -4,6 +4,7 @@ import android.app.Application
 import com.bahri.ryfy.core.AppIconManager
 import com.bahri.ryfy.core.AppLanguageManager
 import com.bahri.ryfy.core.CrashHandler
+import com.bahri.ryfy.core.PlayerStyleManager
 import com.bahri.ryfy.data.FavoritesManager
 import com.bahri.ryfy.data.OfflineTrackManager
 import com.bahri.ryfy.data.PlaylistManager
@@ -25,6 +26,7 @@ class RyFyApplication : Application() {
         runCatching { RecentlyPlayedManager.init(this) }
         runCatching { OfflineTrackManager.init(this) }
         runCatching { EqualizerManager.init(this) }
+        runCatching { PlayerStyleManager.init(this) }
         runCatching { PlayerManager.init(this) }
     }
 }

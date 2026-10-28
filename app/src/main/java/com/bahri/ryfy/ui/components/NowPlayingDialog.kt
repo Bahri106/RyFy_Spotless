@@ -104,6 +104,8 @@ import com.bahri.ryfy.ui.theme.SpotifyText
 import com.bahri.ryfy.ui.theme.SpotifyTextSecondary
 import com.bahri.ryfy.ui.theme.GlassBorderBrush
 import com.bahri.ryfy.ui.theme.liquidGlass
+import com.bahri.ryfy.core.PlayerStyle
+import com.bahri.ryfy.core.PlayerStyleManager
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +144,7 @@ fun NowPlayingDialog(
 
     val queueList by PlayerManager.queue.collectAsState()
     val playlists by PlaylistManager.playlists.collectAsState()
+    val playerStyle by PlayerStyleManager.currentStyle.collectAsState()
 
     val currentSliderPosition = if (isDraggingSlider) {
         dragPositionMs
@@ -185,20 +188,24 @@ fun NowPlayingDialog(
                         )
                     }
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Style Switcher Pill
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0x332A2A2E))
+                            .clickable {
+                                val next = PlayerStyleManager.toggleStyle(context)
+                                Toast.makeText(context, "Gaya: ${next.displayName}", Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
                         Text(
-                            text = "MEMUTAR DARI ALBUM",
-                            style = MaterialTheme.typography.labelSmall,
-                            letterSpacing = 1.sp,
-                            color = SpotifyTextSecondary
-                        )
-                        Text(
-                            text = if (track.album.isBlank() || track.album == "YouTube Music") "RyFy Spotless" else track.album,
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = if (playerStyle == PlayerStyle.IOS_GLASS) " iOS Card" else "♫ Spotify",
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = SpotifyText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            color = if (playerStyle == PlayerStyle.IOS_GLASS) Color.White else SpotifyGreen
                         )
                     }
 
@@ -212,205 +219,244 @@ fun NowPlayingDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                if (playerStyle == PlayerStyle.IOS_GLASS) {
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                // Big Square Album Art (High Resolution HD)
-                if (track.coverUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = track.coverUrl,
-                        contentDescription = track.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(12.dp))
+                    IosPlayerCard(
+                        track = track,
+                        isPlaying = isPlaying,
+                        progressMs = progressMs,
+                        shuffleMode = shuffleMode,
+                        repeatMode = repeatMode,
+                        isDownloaded = isDownloaded,
+                        isDownloading = isDownloading,
+                        onTogglePlay = onTogglePlay,
+                        onSeek = onSeek,
+                        onNext = onNext,
+                        onPrevious = onPrevious,
+                        onToggleShuffle = onToggleShuffle,
+                        onToggleRepeat = onToggleRepeat,
+                        onToggleLike = onToggleLike,
+                        onOpenLyrics = { showFullscreenLyrics = true },
+                        onOpenSpeed = { showPlaybackSpeedDialog = true },
+                        onOpenSleepTimer = { showSleepTimerDialog = true },
+                        onOpenArtist = { showArtistSheet = true },
+                        onDownloadTrack = {
+                            if (isDownloaded) {
+                                OfflineTrackManager.deleteOfflineTrack(context, track.id)
+                                Toast.makeText(context, "Lagu offline dihapus", Toast.LENGTH_SHORT).show()
+                            } else if (!isDownloading) {
+                                Toast.makeText(context, "Mulai mengunduh...", Toast.LENGTH_SHORT).show()
+                                OfflineTrackManager.downloadTrack(context, track) { success ->
+                                    val msg = if (success) "Lagu berhasil diunduh!" else "Gagal mengunduh lagu"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
                     )
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 } else {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(SpotifyHighlight)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = SpotifyTextSecondary,
-                            modifier = Modifier.size(96.dp)
-                        )
-                    }
-                }
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // Title, Artist and Heart
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    ) {
-                        Text(
-                            text = track.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = SpotifyText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = track.artist,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = SpotifyGreen,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                    // Big Square Album Art (High Resolution HD)
+                    if (track.coverUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = track.coverUrl,
+                            contentDescription = track.title,
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .clickable { showArtistSheet = true }
-                                .padding(vertical = 2.dp)
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
                         )
+                    } else {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(SpotifyHighlight)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = null,
+                                tint = SpotifyTextSecondary,
+                                modifier = Modifier.size(96.dp)
+                            )
+                        }
                     }
 
-                    // Like Button (Official Spotify Heart)
-                    IconButton(onClick = { onToggleLike(track) }) {
-                        Icon(
-                            painter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
-                            contentDescription = "Like",
-                            tint = if (track.isLiked) SpotifyGreen else SpotifyText,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Seekbar Slider
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Slider(
-                        value = currentSliderPosition.coerceIn(0f, track.durationMs.toFloat().coerceAtLeast(1f)),
-                        onValueChange = {
-                            isDraggingSlider = true
-                            dragPositionMs = it
-                        },
-                        onValueChangeFinished = {
-                            isDraggingSlider = false
-                            onSeek(dragPositionMs.toLong())
-                        },
-                        valueRange = 0f..track.durationMs.toFloat().coerceAtLeast(1f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = SpotifyText,
-                            activeTrackColor = SpotifyText,
-                            inactiveTrackColor = SpotifyHighlight
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
+                    // Title, Artist and Heart
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = formatTime(currentSliderPosition.toLong()),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = SpotifyTextSecondary
-                        )
-                        Text(
-                            text = formatTime(track.durationMs),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = SpotifyTextSecondary
-                        )
-                    }
-                }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
+                            Text(
+                                text = track.title,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = SpotifyText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = track.artist,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = SpotifyGreen,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable { showArtistSheet = true }
+                                    .padding(vertical = 2.dp)
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Controls Dock (Liquid Glass Floating Capsule)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .liquidGlass(
-                            shape = RoundedCornerShape(36.dp),
-                            backgroundColor = Color(0x66181818),
-                            borderWidth = 1.dp,
-                            borderBrush = GlassBorderBrush
-                        )
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 3-State Spotify Shuffle
-                    IconButton(onClick = onToggleShuffle) {
-                        val isSmart = shuffleMode == ShuffleMode.SMART_SHUFFLE
-                        val isNormal = shuffleMode == ShuffleMode.SHUFFLE
-                        val iconRes = if (isSmart) R.drawable.ic_spotify_smart_shuffle else R.drawable.ic_spotify_shuffle
-                        val tintColor = if (isSmart || isNormal) SpotifyGreen else SpotifyTextSecondary
-                        Icon(
-                            painter = painterResource(iconRes),
-                            contentDescription = "Shuffle",
-                            tint = tintColor,
-                            modifier = Modifier.size(26.dp)
-                        )
+                        // Like Button (Official Spotify Heart)
+                        IconButton(onClick = { onToggleLike(track) }) {
+                            Icon(
+                                painter = painterResource(if (track.isLiked) R.drawable.ic_spotify_heart_active else R.drawable.ic_spotify_heart),
+                                contentDescription = "Like",
+                                tint = if (track.isLiked) SpotifyGreen else SpotifyText,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
 
-                    // Skip Previous
-                    IconButton(onClick = onPrevious) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_spotify_skip_prev),
-                            contentDescription = "Previous",
-                            tint = SpotifyText,
-                            modifier = Modifier.size(36.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Seekbar Slider
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Slider(
+                            value = currentSliderPosition.coerceIn(0f, track.durationMs.toFloat().coerceAtLeast(1f)),
+                            onValueChange = {
+                                isDraggingSlider = true
+                                dragPositionMs = it
+                            },
+                            onValueChangeFinished = {
+                                isDraggingSlider = false
+                                onSeek(dragPositionMs.toLong())
+                            },
+                            valueRange = 0f..track.durationMs.toFloat().coerceAtLeast(1f),
+                            colors = SliderDefaults.colors(
+                                thumbColor = SpotifyText,
+                                activeTrackColor = SpotifyText,
+                                inactiveTrackColor = SpotifyHighlight
+                            ),
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = formatTime(currentSliderPosition.toLong()),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SpotifyTextSecondary
+                            )
+                            Text(
+                                text = formatTime(track.durationMs),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SpotifyTextSecondary
+                            )
+                        }
                     }
 
-                    // Main Big White Play/Pause Button
-                    Box(
-                        contentAlignment = Alignment.Center,
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Controls Dock (Liquid Glass Floating Capsule)
+                    Row(
                         modifier = Modifier
-                            .size(68.dp)
-                            .clip(CircleShape)
-                            .background(SpotifyText)
-                            .clickable(onClick = onTogglePlay)
+                            .fillMaxWidth()
+                            .liquidGlass(
+                                shape = RoundedCornerShape(36.dp),
+                                backgroundColor = Color(0x66181818),
+                                borderWidth = 1.dp,
+                                borderBrush = GlassBorderBrush
+                            )
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(
-                            painter = painterResource(if (isPlaying) R.drawable.ic_spotify_pause else R.drawable.ic_spotify_play),
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = SpotifyDark,
-                            modifier = Modifier.size(34.dp)
-                        )
+                        // 3-State Spotify Shuffle
+                        IconButton(onClick = onToggleShuffle) {
+                            val isSmart = shuffleMode == ShuffleMode.SMART_SHUFFLE
+                            val isNormal = shuffleMode == ShuffleMode.SHUFFLE
+                            val iconRes = if (isSmart) R.drawable.ic_spotify_smart_shuffle else R.drawable.ic_spotify_shuffle
+                            val tintColor = if (isSmart || isNormal) SpotifyGreen else SpotifyTextSecondary
+                            Icon(
+                                painter = painterResource(iconRes),
+                                contentDescription = "Shuffle",
+                                tint = tintColor,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        // Skip Previous
+                        IconButton(onClick = onPrevious) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_spotify_skip_prev),
+                                contentDescription = "Previous",
+                                tint = SpotifyText,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        // Main Big White Play/Pause Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(68.dp)
+                                .clip(CircleShape)
+                                .background(SpotifyText)
+                                .clickable(onClick = onTogglePlay)
+                        ) {
+                            Icon(
+                                painter = painterResource(if (isPlaying) R.drawable.ic_spotify_pause else R.drawable.ic_spotify_play),
+                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                tint = SpotifyDark,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+
+                        // Skip Next
+                        IconButton(onClick = onNext) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_spotify_skip_next),
+                                contentDescription = "Next",
+                                tint = SpotifyText,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        // Repeat / Repeat One
+                        IconButton(onClick = onToggleRepeat) {
+                            val isRepeatOne = repeatMode == Player.REPEAT_MODE_ONE
+                            val active = repeatMode != Player.REPEAT_MODE_OFF
+                            val iconRes = if (isRepeatOne) R.drawable.ic_spotify_repeat_once else R.drawable.ic_spotify_repeat
+                            Icon(
+                                painter = painterResource(iconRes),
+                                contentDescription = "Repeat",
+                                tint = if (active) SpotifyGreen else SpotifyTextSecondary,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
 
-                    // Skip Next
-                    IconButton(onClick = onNext) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_spotify_skip_next),
-                            contentDescription = "Next",
-                            tint = SpotifyText,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-
-                    // Repeat / Repeat One
-                    IconButton(onClick = onToggleRepeat) {
-                        val isRepeatOne = repeatMode == Player.REPEAT_MODE_ONE
-                        val active = repeatMode != Player.REPEAT_MODE_OFF
-                        val iconRes = if (isRepeatOne) R.drawable.ic_spotify_repeat_once else R.drawable.ic_spotify_repeat
-                        Icon(
-                            painter = painterResource(iconRes),
-                            contentDescription = "Repeat",
-                            tint = if (active) SpotifyGreen else SpotifyTextSecondary,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(28.dp))
                 }
-
-                Spacer(modifier = Modifier.height(28.dp))
 
                 // Lyrics Preview Box (Spotify Style with Realtime Auto-Sync)
                 val cleanLyrics = cleanLyricsText(track.lyrics)

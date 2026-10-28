@@ -1,0 +1,28 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Bottom Triangle -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,14 L17,21 L7,21 Z" />
+    <!-- Inner Arc -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M8.5,12 C9.5,10.7 10.7,10 12,10 C13.3,10 14.5,10.7 15.5,12" />
+    <!-- Middle Arc -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M5.5,9 C7.3,7.1 9.5,6 12,6 C14.5,6 16.7,7.1 18.5,9" />
+    <!-- Outer Arc -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M3,6 C5.4,3.5 8.5,2 12,2 C15.5,2 18.6,3.5 21,6" />
+</vector>
